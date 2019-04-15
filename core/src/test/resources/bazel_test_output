@@ -1,0 +1,38 @@
+# /git/wix/Hackathon-Zorechka-BazelTestRepo/example/src/main/scala/com/example/inner/BUILD.bazel:9:1
+scala_library(
+  name = "inner_project_main_dependencies",
+  srcs = [],
+  deps = ["@com_github_mpilquist_simulacrum_2_12//:com_github_mpilquist_simulacrum_2_12", "@org_scalacheck_scalacheck_2_12//:org_scalacheck_scalacheck_2_12"],
+  scalacopts = ["-Ypartial-unification"],
+)
+
+# /git/wix/Hackathon-Zorechka-BazelTestRepo/example/BUILD.bazel:13:1
+scala_library(
+  name = "main_dependencies",
+  srcs = [],
+  deps = ["@com_github_mpilquist_simulacrum_2_12//:com_github_mpilquist_simulacrum_2_12", "@org_scalacheck_scalacheck_2_12//:org_scalacheck_scalacheck_2_12"],
+  scalacopts = ["-Ypartial-unification"],
+)
+
+# /private/var/tmp/_bazel_dmytrona/58b82c392960bc4db5a8272b81543bfa/external/org_scalacheck_scalacheck_2_12/BUILD:9:1
+scala_import(
+  name = "org_scalacheck_scalacheck_2_12",
+  jars = ["@org_scalacheck_scalacheck_2_12//:scalacheck_2.12-1.14.0.jar"],
+  deps = ["@org_scala_lang_scala_library//:org_scala_lang_scala_library", "@org_scala_sbt_test_interface//:org_scala_sbt_test_interface"],
+  srcjar = "@org_scalacheck_scalacheck_2_12//:scalacheck_2.12-1.14.0-src.jar",
+)
+
+# /private/var/tmp/_bazel_dmytrona/58b82c392960bc4db5a8272b81543bfa/external/com_github_mpilquist_simulacrum_2_12/BUILD:9:1
+scala_import(
+  name = "com_github_mpilquist_simulacrum_2_12",
+  jars = ["@com_github_mpilquist_simulacrum_2_12//:simulacrum_2.12-0.12.0.jar"],
+  deps = ["@org_scala_lang_scala_library//:org_scala_lang_scala_library", "@org_typelevel_macro_compat_2_12//:org_typelevel_macro_compat_2_12"],
+  srcjar = "@com_github_mpilquist_simulacrum_2_12//:simulacrum_2.12-0.12.0-src.jar",
+)
+
+# /private/var/tmp/_bazel_dmytrona/8ccb1ae45ef90091d9394a5e8a71fb61/external/com_google_protobuf_protobuf_java/BUILD:9:1
+scala_import(
+  name = "com_google_protobuf_protobuf_java",
+  jars = ["@com_google_protobuf_protobuf_java//:protobuf-java-3.6.1.jar"],
+  srcjar = "@com_google_protobuf_protobuf_java//:protobuf-java-3.6.1-src.jar",
+)
