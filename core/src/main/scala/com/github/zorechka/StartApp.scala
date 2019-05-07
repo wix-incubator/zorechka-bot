@@ -13,7 +13,7 @@ object StartApp extends App {
   type AppEnv = Console with GithubRepos with GithubClient with Http4sClient with MavenCentralClient
 
   val env = new Console.Live
-    with HasAppConfigLive
+    with HasAppConfig.Live
     with GithubRepos.Live with GithubClient.Live
     with Http4sClient.Live with MavenCentralClient.Live
 

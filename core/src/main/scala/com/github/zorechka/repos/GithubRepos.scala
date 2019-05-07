@@ -22,7 +22,7 @@ object GithubRepos {
       override def reposToCheck(): Task[List[GitRepo]] = {
         val regex = """-\s+(.+)/(.+)""".r
 
-        config.map {
+        cfg.config.map {
           cfg => Files
             .readAllLines(new File(cfg.reposFile).toPath).asScala
             .collect {
