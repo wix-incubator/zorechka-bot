@@ -3,10 +3,9 @@ package com.github.zorechka
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
 import com.github.zorechka.HasAppConfig.Cfg
-import pureconfig.loadConfig
 import scalaz.zio.internal.NamedThreadFactory
 import scalaz.zio.internal.PlatformLive.ExecutorUtil
-import scalaz.zio.{Task, ZIO}
+import scalaz.zio.{IO, Task, ZIO}
 
 import scala.concurrent.ExecutionContext
 
@@ -18,7 +17,7 @@ trait HasAppConfig {
 
 object HasAppConfig {
   trait Cfg {
-    val config: Task[AppConfig]
+    val config: AppConfig
     val blockingCtx: ExecutionContext
   }
 
@@ -26,14 +25,10 @@ object HasAppConfig {
     import pureconfig.generic.auto._
 
     val cfg: Cfg = new Cfg {
-      override val config: Task[AppConfig] = {
-        ZIO
-          .fromEither(loadConfig[AppConfig])
-          .mapError(failures => new IllegalStateException(s"Can't read file: $failures"))
-      }
+      override val config: AppConfig = pureconfig.loadConfigOrThrow[AppConfig]
 
       override val blockingCtx: ExecutionContext = {
-        val factory = new NamedThreadFactory("blocking-pool", true)
+        val factory = new NamedThreadFactory(name = "blocking-pool", daemon = true)
         ExecutorUtil
           .fromThreadPoolExecutor(_ => Int.MaxValue)(Executors.newCachedThreadPool(factory).asInstanceOf[ThreadPoolExecutor]).asEC
       }

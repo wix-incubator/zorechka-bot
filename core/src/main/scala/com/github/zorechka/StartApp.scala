@@ -10,7 +10,7 @@ import scalaz.zio.console._
 import scalaz.zio.internal.PlatformLive
 
 object StartApp extends App {
-  type AppEnv = Console with GithubRepos with GithubClient with Http4sClient with MavenCentralClient
+  type AppEnv = Console with GithubRepos with GithubClient with Http4sClient with MavenCentralClient with HasAppConfig
 
   val env = new Console.Live
     with HasAppConfig.Live
@@ -70,7 +70,7 @@ object StartApp extends App {
 
   def isNewer(latest: Dep, current: Dep): Boolean = Ordering[Dep].gt(latest, current)
 
-  def foundRepos(): ZIO[GithubRepos, Throwable, List[GitRepo]] = {
+  def foundRepos(): ZIO[GithubRepos with HasAppConfig, Throwable, List[GitRepo]] = {
     ZIO.accessM(env => env.repos.reposToCheck())
   }
 
