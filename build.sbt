@@ -7,7 +7,8 @@ val settings = Seq(
   version := "0.1",
   scalaVersion := "2.12.6",
   crossScalaVersions := Seq("2.11.12", "2.12.6", "2.13.0-M4"),
-  licenses := Seq("Apache-2.0" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+  licenses := Seq("Apache-2.0" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6")
 )
 
 resolvers ++= Seq(
@@ -32,8 +33,6 @@ scalacOptions ++= Seq(
 
 javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation", "-source", "1.7", "-target", "1.7")
 
-addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6")
-
 lazy val core = project
   .settings(settings)
   .settings(libraryDependencies ++= Seq(
@@ -43,6 +42,6 @@ lazy val core = project
     C.scalazZioInteropCats,
     T.specs2
   ) ++ C.circe_all ++ C.cats_all ++ C.http4s_all)
-                                    
+
 lazy val root = project.in(file("."))
   .aggregate(core)

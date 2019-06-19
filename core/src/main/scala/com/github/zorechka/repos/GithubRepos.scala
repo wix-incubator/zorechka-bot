@@ -4,22 +4,23 @@ import java.io.File
 import java.nio.file.Files
 
 import com.github.zorechka.HasAppConfig
-import scalaz.zio.{Task, TaskR, ZIO}
+import scalaz.zio.{TaskR, ZIO}
 
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 case class GitRepo(owner: String, name: String, url: String)
-trait GithubRepos {
-  val repos: GithubRepos.Service
+
+trait GithubRepos[-R] {
+  val repos: GithubRepos.Service[R]
 }
 
 object GithubRepos {
-  trait Service {
-    def reposToCheck(): TaskR[HasAppConfig, List[GitRepo]]
+  trait Service[-R] {
+    def reposToCheck(): TaskR[R, List[GitRepo]]
   }
 
-  trait Live extends GithubRepos {
-    val repos: GithubRepos.Service = new GithubRepos.Service {
+  trait Live extends GithubRepos[HasAppConfig] {
+    val repos = new GithubRepos.Service[HasAppConfig] {
       private val regex = """-\s+(.+)/(.+)""".r
 
       override def reposToCheck(): TaskR[HasAppConfig, List[GitRepo]] = for {

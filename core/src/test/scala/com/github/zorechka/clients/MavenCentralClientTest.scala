@@ -2,8 +2,8 @@ package com.github.zorechka.clients
 
 import com.github.zorechka.{Dep, HasAppConfig}
 import org.specs2.mutable.Specification
-import scalaz.zio.{DefaultRuntime, Runtime}
 import scalaz.zio.internal.PlatformLive
+import scalaz.zio.{DefaultRuntime, Runtime}
 
 class MavenCentralClientTest extends Specification with DefaultRuntime {
   "MavenCentralClient" should {
@@ -11,7 +11,7 @@ class MavenCentralClientTest extends Specification with DefaultRuntime {
       val rt = Runtime(new HasAppConfig.Live with Http4sClient.Live, PlatformLive.Default)
 
       val searchDep = Dep("org.scalacheck", "scalacheck_2.12", "1.10.0")
-      val mavenCentral = new MavenCentralClient.Live {}
+      val mavenCentral = new MavenCentralClient.Live[HasAppConfig.Live with Http4sClient.Live] {}
       val call = mavenCentral.client.allVersions(searchDep)
 
       val result = rt.unsafeRunSync(call)

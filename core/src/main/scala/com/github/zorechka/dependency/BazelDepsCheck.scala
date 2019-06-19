@@ -5,8 +5,7 @@ import java.nio.file.{Files, Path}
 import com.github.zorechka.Dep
 import com.github.zorechka.utils.RunProcess.execCmd
 
-import collection.JavaConverters._
-
+import scala.collection.JavaConverters._
 import scala.util.Try
 
 object BazelDepsCheck {
