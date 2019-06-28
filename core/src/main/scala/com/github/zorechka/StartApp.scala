@@ -5,27 +5,35 @@ import java.nio.file.{Files, Path}
 import com.github.zorechka.clients.{GithubClient, Http4sClient, MavenCentralClient}
 import com.github.zorechka.dependency.BazelDepsCheck
 import com.github.zorechka.repos.{GitRepo, GithubRepos}
-import scalaz.zio.{Runtime, ZIO}
 import scalaz.zio.console._
 import scalaz.zio.internal.PlatformLive
+import scalaz.zio.{Runtime, ZIO}
+
+// Avoid `<:<` due to ambiguous implicits caused by Predef.$conforms$ very high priority in implicit scope
+trait Has[-A, +B] extends (A => B)
+
+object Has {
+  implicit def has[A, B](implicit ev: A <:< B): Has[A, B] = ev(_)
+}
 
 object StartApp extends App {
-  type AppEnv = Console with GithubRepos with GithubClient with Http4sClient with MavenCentralClient with HasAppConfig
+  trait AppEnv[R] extends Console with GithubRepos[R] with GithubClient[R] with Http4sClient[R] with MavenCentralClient[R] with HasAppConfig
+  trait AppEnvImpl extends AppEnv[AppEnvImpl]
 
-  val env = new Console.Live
-    with HasAppConfig.Live
+  val env: AppEnvImpl = new AppEnvImpl
+    with Console.Live with HasAppConfig.Live
     with GithubRepos.Live with GithubClient.Live
-    with Http4sClient.Live with MavenCentralClient.Live
+    with Http4sClient.Live with MavenCentralClient.Live[AppEnvImpl]
 
   Runtime(env, PlatformLive.Default).unsafeRunSync[Nothing, Int](runApp(args.toList))
 
   case class ForkData(forkDir: Path, deps: List[Dep])
 
-  def runApp(args: List[String]): ZIO[AppEnv, Nothing, Int] = {
+  def runApp[R <: Console: ? Has AppEnv[R]](args: List[String]): ZIO[R, Nothing, Int] = {
     val res = for {
       _ <- putStrLn("Starting bot")
 
-      githubRepos <- foundRepos()
+      githubRepos <- foundRepos
       _ <- putStrLn("Has following repos: " + githubRepos.mkString("\n"))
 
       repoWithDeps <- ZIO.collectAll(githubRepos.map {
@@ -33,7 +41,8 @@ object StartApp extends App {
           val forkDir = Files.createTempDirectory(s"repos-${repo.owner}-${repo.name}")
           for {
             _ <- putStrLn(s"Forking in: ${forkDir.toAbsolutePath}")
-            out <- ZIO.accessM[GithubClient](_.githubClient.cloneRepo(repo, forkDir))
+            githubClient <- ZIO.access[R](_.githubClient)
+            out <- githubClient.cloneRepo(repo, forkDir)
             deps <- ZIO(BazelDepsCheck.foundDeps(forkDir.resolve(repo.name)))
             _ <- putStrLn(s"Found ${deps.size} in $repo")
           } yield repo -> ForkData(forkDir.resolve(repo.name), deps)
@@ -70,34 +79,25 @@ object StartApp extends App {
 
   def isNewer(latest: Dep, current: Dep): Boolean = Ordering[Dep].gt(latest, current)
 
-  def foundRepos(): ZIO[GithubRepos with HasAppConfig, Throwable, List[GitRepo]] = {
+  def foundRepos[R: ? Has GithubRepos[R]]: ZIO[R, Throwable, List[GitRepo]] = {
     ZIO.accessM(env => env.repos.reposToCheck())
   }
 
-  def foundDeps(repo: GitRepo): ZIO[Console with GithubClient, Throwable, List[Dep]] = {
-    val dir = Files.createTempDirectory(s"repos-${repo.owner}-${repo.name}")
-    for {
-      out <- ZIO.accessM[GithubClient](_.githubClient.cloneRepo(repo, dir))
-      _ <- ZIO.foreach(out.out)(putStrLn)
-      deps <- ZIO(BazelDepsCheck.foundDeps(dir.resolve(repo.name)))
-    } yield deps
-  }
-
-  def foundLatest(deps: Seq[Dep]): ZIO[MavenCentralClient with Http4sClient, Throwable, List[Dep]] = {
-    ZIO.foreach(deps)(dep => ZIO.accessM[MavenCentralClient with Http4sClient] {
+  def foundLatest[R: ? Has MavenCentralClient[R]](deps: Seq[Dep]): ZIO[R, Throwable, List[Dep]] = {
+    ZIO.foreach(deps)(dep => ZIO.accessM[R] {
       _.client.allVersions(dep).map(listOfDeps => if (listOfDeps.isEmpty) dep else listOfDeps.max)
     })
   }
 
-  def createNewVersionPullRequest(repo: GitRepo, forkDir: Path, deps: List[Dep]): ZIO[GithubClient, Throwable, Unit] = {
+  def createNewVersionPullRequest[R: ? Has GithubClient[R]](repo: GitRepo, forkDir: Path, deps: List[Dep]): ZIO[R, Throwable, Unit] = {
     val (depsDesc, branch) = branchName(deps)
 
     for {
-      _ <- ZIO.accessM[GithubClient](_.githubClient.createBranch(forkDir, branch))
+      _ <- ZIO.accessM[R](_.githubClient.createBranch(forkDir, branch))
       _ <- ZIO.effect(BazelDepsCheck.applyDepUpdates(forkDir, deps))
-      _ <- ZIO.accessM[GithubClient](_.githubClient.stageAllChanges(forkDir))
-      _ <- ZIO.accessM[GithubClient](_.githubClient.commit(forkDir, s"zorechka found new versions for deps: $depsDesc #pr"))
-      _ <- ZIO.accessM[GithubClient](_.githubClient.push(forkDir, branch))
+      _ <- ZIO.accessM[R](_.githubClient.stageAllChanges(forkDir))
+      _ <- ZIO.accessM[R](_.githubClient.commit(forkDir, s"zorechka found new versions for deps: $depsDesc #pr"))
+      _ <- ZIO.accessM[R](_.githubClient.push(forkDir, branch))
     } yield ()
   }
 

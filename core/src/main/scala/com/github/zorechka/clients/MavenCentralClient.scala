@@ -1,30 +1,30 @@
 package com.github.zorechka.clients
 
 import com.github.zorechka.Dep
-import org.http4s.{EntityDecoder, Header, Headers, Method, Request, Uri}
-import scalaz.zio.{Task, ZIO}
-import scalaz.zio.interop.catz._
 import io.circe.generic.auto._
 import org.http4s.circe.jsonOf
+import org.http4s.{EntityDecoder, Header, Headers, Method, Request, Uri}
+import scalaz.zio.interop.catz._
+import scalaz.zio.{Task, ZIO}
 
-trait MavenCentralClient {
-  val client: MavenCentralClient.Service
+trait MavenCentralClient[-R] {
+  val client: MavenCentralClient.Service[R]
 }
 
 object MavenCentralClient {
-  trait Service {
-    def allVersions(dep: Dep): ZIO[Http4sClient, Throwable, List[Dep]]
+  trait Service[-R] {
+    def allVersions(dep: Dep): ZIO[R, Throwable, List[Dep]]
   }
 
-  trait Live extends MavenCentralClient {
-    val client = new MavenCentralClient.Service {
+  trait Live[R] extends MavenCentralClient[Http4sClient[R] with R] {
+    val client = new MavenCentralClient.Service[Http4sClient[R] with R] {
       case class Response(response: InnerResponse)
       case class InnerResponse(docs: Seq[Document])
       case class Document(v: String)
 
       implicit val decoder: EntityDecoder[Task, Response] = jsonOf[Task, Response]
 
-      override def allVersions(dep: Dep): ZIO[Http4sClient, Throwable, List[Dep]] = {
+      override def allVersions(dep: Dep): ZIO[Http4sClient[R] with R, Throwable, List[Dep]] = {
         ZIO.accessM {
           client =>
             val uri = Uri

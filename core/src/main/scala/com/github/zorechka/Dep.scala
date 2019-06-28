@@ -13,5 +13,3 @@ object Dep {
     dep => new ComparableVersion(dep.version)
   }
 }
-
-case class Dummy()

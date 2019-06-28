@@ -3,7 +3,7 @@ package com.github.zorechka.utils
 import java.io.File
 import java.nio.file.Files
 
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 object Resources {
   def readAllLines(filename: String): List[String] = {

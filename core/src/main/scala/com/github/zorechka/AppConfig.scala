@@ -5,7 +5,6 @@ import java.util.concurrent.{Executors, ThreadPoolExecutor}
 import com.github.zorechka.HasAppConfig.Cfg
 import scalaz.zio.internal.NamedThreadFactory
 import scalaz.zio.internal.PlatformLive.ExecutorUtil
-import scalaz.zio.{IO, Task, ZIO}
 
 import scala.concurrent.ExecutionContext
 
