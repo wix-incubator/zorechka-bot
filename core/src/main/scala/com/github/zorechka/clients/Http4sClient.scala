@@ -5,12 +5,11 @@ import com.github.zorechka.HasAppConfig
 import org.http4s.client.Client
 import org.http4s.{Request, Response}
 import org.http4s.client.blaze.BlazeClientBuilder
-import scalaz.zio
-import scalaz.zio.internal.PlatformLive
-import scalaz.zio.{Runtime, Task}
+import zio.internal.PlatformLive
+import zio.{Runtime, Task}
 
 import scala.language.higherKinds
-import scalaz.zio.interop.catz._
+import zio.interop.catz._
 
 trait Http4sClient {
   val http4sClient: Http4sClient.Service

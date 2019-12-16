@@ -2,13 +2,14 @@ package com.github.zorechka
 import sbt._
 
 object Dependencies {
-  val CatsVersion = "1.6.0"
-  val CatsEffectVersion = "1.2.0"
+  val CatsVersion = "2.0.0"
+  val CatsEffectVersion = "2.0.0"
   val CatsMtlVersion = "0.5.0"
   val CirceVersion = "0.10.0-M1"
   val MonixVersion = "3.0.0-M3"
   val ScalaZVersion = "7.3.0-M28"
-  val ZIOVersion = "1.0-RC4"
+  val ZIOVersion = "1.0.0-RC17"
+  val ZIOInteropVersion = "2.0.0.0-RC10"
   val ShapelessVersion = "2.3.3"
   val FS2Version = "1.0.4"
   val Http4sVersion = "0.20.0-RC1"
@@ -48,8 +49,8 @@ object Dependencies {
 
     // scalaz
     val scalaz = "org.scalaz" %% "scalaz-core" % ScalaZVersion
-    val scalazZio = "org.scalaz" %% "scalaz-zio" % ZIOVersion
-    val scalazZioInteropCats = "org.scalaz" %% "scalaz-zio-interop-cats" % ZIOVersion
+    val scalazZio = "dev.zio" %% "zio" % ZIOVersion
+    val scalazZioInteropCats = "dev.zio" %% "zio-interop-cats" % ZIOInteropVersion
     
     // maven ver parsing
     val mavenArtifact = "org.apache.maven" % "maven-artifact" % MavenArtifactVersion

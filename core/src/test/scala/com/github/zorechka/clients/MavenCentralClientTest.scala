@@ -2,8 +2,8 @@ package com.github.zorechka.clients
 
 import com.github.zorechka.{Dep, HasAppConfig}
 import org.specs2.mutable.Specification
-import scalaz.zio.{DefaultRuntime, Runtime}
-import scalaz.zio.internal.PlatformLive
+import zio.{DefaultRuntime, Runtime}
+import zio.internal.PlatformLive
 
 class MavenCentralClientTest extends Specification with DefaultRuntime {
   "MavenCentralClient" should {

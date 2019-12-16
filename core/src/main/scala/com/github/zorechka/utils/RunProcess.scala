@@ -1,6 +1,5 @@
 package com.github.zorechka.utils
 
-import java.io.IOException
 import java.nio.file.Path
 
 import scala.collection.mutable.ListBuffer

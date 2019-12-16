@@ -5,9 +5,9 @@ import java.nio.file.{Files, Path}
 import com.github.zorechka.clients.{GithubClient, Http4sClient, MavenCentralClient}
 import com.github.zorechka.dependency.BazelDepsCheck
 import com.github.zorechka.repos.{GitRepo, GithubRepos}
-import scalaz.zio.{Runtime, ZIO}
-import scalaz.zio.console._
-import scalaz.zio.internal.PlatformLive
+import zio.{Runtime, ZIO}
+import zio.console._
+import zio.internal.PlatformLive
 
 object StartApp extends App {
   type AppEnv = Console with GithubRepos with GithubClient with Http4sClient with MavenCentralClient with HasAppConfig

@@ -4,7 +4,7 @@ import java.nio.file.Path
 
 import com.github.zorechka.repos.GitRepo
 import com.github.zorechka.utils.RunProcess
-import scalaz.zio.{Task, ZIO}
+import zio.{Task, ZIO}
 
 case class ClientOutput(out: List[String])
 

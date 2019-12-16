@@ -2,8 +2,8 @@ package com.github.zorechka.clients
 
 import com.github.zorechka.Dep
 import org.http4s.{EntityDecoder, Header, Headers, Method, Request, Uri}
-import scalaz.zio.{Task, ZIO}
-import scalaz.zio.interop.catz._
+import zio.{Task, ZIO}
+import zio.interop.catz._
 import io.circe.generic.auto._
 import org.http4s.circe.jsonOf
 

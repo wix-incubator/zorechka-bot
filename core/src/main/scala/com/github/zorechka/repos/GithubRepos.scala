@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.file.Files
 
 import com.github.zorechka.HasAppConfig
-import scalaz.zio.{Task, TaskR, ZIO}
+import zio.{Task, TaskR, ZIO}
 
 import collection.JavaConverters._
 
