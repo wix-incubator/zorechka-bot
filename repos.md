@@ -1,1 +1,1 @@
-- wix-a/Hackathon-Zorechka-BazelTestRepo
+- wix-private/strategic-products

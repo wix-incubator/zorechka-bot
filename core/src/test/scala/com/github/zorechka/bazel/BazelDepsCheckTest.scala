@@ -1,4 +1,4 @@
-package com.github.zorechka.dependency
+package com.github.zorechka.bazel
 
 import com.github.zorechka.Dep
 import com.github.zorechka.utils.Resources

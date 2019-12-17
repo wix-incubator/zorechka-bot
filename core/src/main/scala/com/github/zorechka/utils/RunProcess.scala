@@ -20,8 +20,9 @@ object RunProcess {
       override def buffer[T](f: => T): T = f
     }
 
+    println(command.mkString(" "))
     val exitStatus = Process(command, Some(workDir.toFile), extraEnv: _*).!(log)
-    if (exitStatus != 0)
+    if (exitStatus != 0 && exitStatus != 3)
       throw new IllegalStateException(s"Got status $exitStatus")
     lb.result()
   }
