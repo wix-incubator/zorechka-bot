@@ -4,7 +4,7 @@ import java.nio.file.Path
 
 import com.github.zorechka.repos.GitRepo
 import com.github.zorechka.utils.RunProcess
-import zio.{Task, ZIO}
+import zio.{RIO, Task, ZIO}
 
 case class ClientOutput(out: List[String])
 
@@ -44,6 +44,21 @@ object GithubClient {
       }
     }
   }
+
+  def cloneRepo(repo: GitRepo, destinationDir: Path): RIO[GithubClient, ClientOutput] =
+    ZIO.accessM[GithubClient](_.githubClient.cloneRepo(repo, destinationDir))
+
+  def createBranch(workDir: Path, branchName: String): RIO[GithubClient, ClientOutput] =
+    ZIO.accessM[GithubClient](_.githubClient.createBranch(workDir, branchName))
+
+  def stageAllChanges(workDir: Path): RIO[GithubClient, ClientOutput] =
+    ZIO.accessM[GithubClient](_.githubClient.stageAllChanges(workDir))
+
+  def commit(workDir: Path, message: String): RIO[GithubClient, ClientOutput] =
+    ZIO.accessM[GithubClient](_.githubClient.commit(workDir, message))
+
+  def push(workDir: Path, branchName: String): RIO[GithubClient, ClientOutput] =
+    ZIO.accessM[GithubClient](_.githubClient.push(workDir, branchName))
 }
 
 object GithubClientLive extends GithubClient.Live

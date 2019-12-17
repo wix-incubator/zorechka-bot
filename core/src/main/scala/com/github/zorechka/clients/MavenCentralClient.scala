@@ -2,7 +2,7 @@ package com.github.zorechka.clients
 
 import com.github.zorechka.Dep
 import org.http4s.{EntityDecoder, Header, Headers, Method, Request, Uri}
-import zio.{Task, ZIO}
+import zio.{RIO, Task, ZIO}
 import zio.interop.catz._
 import io.circe.generic.auto._
 import org.http4s.circe.jsonOf
@@ -13,7 +13,7 @@ trait MavenCentralClient {
 
 object MavenCentralClient {
   trait Service {
-    def allVersions(dep: Dep): ZIO[Http4sClient, Throwable, List[Dep]]
+    def allVersions(dep: Dep): RIO[Http4sClient, List[Dep]]
   }
 
   trait Live extends MavenCentralClient {
@@ -24,7 +24,7 @@ object MavenCentralClient {
 
       implicit val decoder: EntityDecoder[Task, Response] = jsonOf[Task, Response]
 
-      override def allVersions(dep: Dep): ZIO[Http4sClient, Throwable, List[Dep]] = {
+      override def allVersions(dep: Dep): RIO[Http4sClient, List[Dep]] = {
         ZIO.accessM {
           client =>
             val uri = Uri

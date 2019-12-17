@@ -16,14 +16,14 @@ trait GithubRepos {
 
 object GithubRepos {
   trait Service {
-    def reposToCheck(): RIO[HasAppConfig, List[GitRepo]]
+    def repos(): RIO[HasAppConfig, List[GitRepo]]
   }
 
   trait Live extends GithubRepos {
     val repos: GithubRepos.Service = new GithubRepos.Service {
       private val regex = """-\s+(.+)/(.+)""".r
 
-      override def reposToCheck(): RIO[HasAppConfig, List[GitRepo]] = for {
+      override def repos(): RIO[HasAppConfig, List[GitRepo]] = for {
         cfg <- ZIO.access[HasAppConfig](_.cfg.config)
         result <- ZIO.effect {
           Files
@@ -36,4 +36,7 @@ object GithubRepos {
       } yield result
     }
   }
+
+  // helpers
+  def repos(): RIO[GithubRepos with HasAppConfig, List[GitRepo]] = ZIO.accessM(env => env.repos.repos())
 }
