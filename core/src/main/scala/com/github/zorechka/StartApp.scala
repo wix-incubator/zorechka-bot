@@ -1,8 +1,8 @@
 package com.github.zorechka
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Files
 
-import com.github.zorechka.clients.{GithubClient, Http4sClient, MavenCentralClient}
+import com.github.zorechka.clients.{BazelClient, BuildozerClient, GithubClient, Http4sClient, MavenCentralClient}
 import com.github.zorechka.repos.{GitRepo, GithubRepos}
 import com.github.zorechka.service.{ResultNotifier, ThirdPartyDepsAnalyzer, UnusedDepsAnalyser}
 import zio.{Runtime, ZIO}
@@ -11,19 +11,18 @@ import zio.internal.PlatformLive
 
 object StartApp extends App {
   type AppEnv = Console with GithubRepos with GithubClient with Http4sClient with MavenCentralClient
-    with HasAppConfig with ThirdPartyDepsAnalyzer with ResultNotifier
+    with HasAppConfig with ThirdPartyDepsAnalyzer with ResultNotifier with UnusedDepsAnalyser with BazelClient
+    with BuildozerClient
 
   val env = new Console.Live
     with HasAppConfig.Live
     with GithubRepos.Live with GithubClient.Live
-    with Http4sClient.Live with MavenCentralClient.Live
-    with ThirdPartyDepsAnalyzer.Live with ResultNotifier.CreatePullRequest
-
+    with Http4sClient.Live with MavenCentralClient.Live with BuildozerClient.Live
+    with BazelClient.Live with ResultNotifier.PrintPullRequestInfo // CreatePullRequest
+    with ThirdPartyDepsAnalyzer.Live with UnusedDepsAnalyser.Live
 
   Runtime(env, PlatformLive.Default)
     .unsafeRunSync(buildApp(args.toList))
-
-  case class ForkData(repo: GitRepo, forkDir: Path)
 
   def buildApp(args: List[String]): ZIO[AppEnv, Throwable, Unit] = for {
     _ <- putStrLn("Starting bot")
@@ -42,9 +41,9 @@ object StartApp extends App {
       repoPath = forkDir.resolve(repo.name)
       _ <- GithubClient.cloneRepo(repo, forkDir)
       forkData = ForkData(repo, repoPath)
-      updatedDeps <- ThirdPartyDepsAnalyzer.findLatest(forkData)
+//      updatedDeps <- ThirdPartyDepsAnalyzer.findLatest(forkData)
       unusedDeps <- UnusedDepsAnalyser.findUnused(forkData)
-      _ <- ResultNotifier.notify(forkData, updatedDeps, unusedDeps)
+      _ <- ResultNotifier.notify(forkData.forkDir, List.empty /* updatedDeps */, unusedDeps)
     } yield ()
   }
 }

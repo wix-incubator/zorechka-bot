@@ -1,7 +1,6 @@
 package com.github.zorechka.service
 
-import com.github.zorechka.Dep
-import com.github.zorechka.StartApp.ForkData
+import com.github.zorechka.{Dep, ForkData}
 import com.github.zorechka.bazel.BazelDepsCheck
 import com.github.zorechka.clients.{Http4sClient, MavenCentralClient}
 import zio.{RIO, ZIO}
@@ -20,7 +19,7 @@ object ThirdPartyDepsAnalyzer {
     override val analyzer: Service = new Service {
       override def findLatest(forkData: ForkData): ZIO[MavenCentralClient with Http4sClient with Console, Throwable, List[Dep]] = {
         for {
-          deps <- ZIO(BazelDepsCheck.foundDeps(forkData.forkDir))
+          deps <- BazelDepsCheck.foundDeps(forkData.forkDir)
           _ <- putStrLn(s"Found ${deps.size} in ${forkData.repo}")
           latestVersions <- latestVersions(deps)
           updatedDeps = latestVersions.filter {

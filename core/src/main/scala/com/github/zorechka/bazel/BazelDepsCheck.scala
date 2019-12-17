@@ -3,17 +3,17 @@ package com.github.zorechka.bazel
 import java.nio.file.{Files, Path}
 
 import com.github.zorechka.Dep
-import com.github.zorechka.utils.RunProcess.execCmd
+import com.github.zorechka.clients.process.RunProcess.execCmd
+import zio.Task
 
 import collection.JavaConverters._
-import scala.util.Try
 
 object BazelDepsCheck {
-  def foundDeps(repoDir: Path): List[Dep] = {
+  def foundDeps(repoDir: Path): Task[List[Dep]] = {
     val cmd = List("bazel", "query", "--noimplicit_deps", "--wix_nocache","--keep_going", "deps(kind(scala_library, deps(//...)), 1)", "--output", "build")
-    val exec = Try(execCmd(cmd, repoDir))
-    val result = parseQueryOutput(exec.get).filterNot(isIgnored)
-    result
+    for {
+      exec <- execCmd(cmd, repoDir)
+    } yield parseQueryOutput(exec.value).filterNot(isIgnored)
   }
 
   def applyDepUpdates(repoDir: Path, deps: List[Dep]): Unit = {
