@@ -1,8 +1,7 @@
 package com.github.zorechka.service
 
 import com.github.zorechka.{Dep, ForkData}
-import com.github.zorechka.bazel.BazelDepsCheck
-import com.github.zorechka.clients.{Http4sClient, MavenCentralClient}
+import com.github.zorechka.clients.{BazelClient, Http4sClient, MavenCentralClient}
 import zio.{RIO, ZIO}
 import zio.console.{Console, putStrLn}
 
@@ -12,14 +11,14 @@ trait ThirdPartyDepsAnalyzer {
 
 object ThirdPartyDepsAnalyzer {
   trait Service {
-    def findLatest(forkData: ForkData): ZIO[MavenCentralClient with Http4sClient with Console, Throwable, List[Dep]]
+    def findLatest(forkData: ForkData): ZIO[MavenCentralClient with BazelClient with Http4sClient with Console, Throwable, List[Dep]]
   }
 
   trait Live extends ThirdPartyDepsAnalyzer {
     override val analyzer: Service = new Service {
-      override def findLatest(forkData: ForkData): ZIO[MavenCentralClient with Http4sClient with Console, Throwable, List[Dep]] = {
+      override def findLatest(forkData: ForkData): ZIO[MavenCentralClient with BazelClient with Http4sClient with Console, Throwable, List[Dep]] = {
         for {
-          deps <- BazelDepsCheck.foundDeps(forkData.forkDir)
+          deps <- BazelClient.foundDeps(forkData.forkDir)
           _ <- putStrLn(s"Found ${deps.size} in ${forkData.repo}")
           latestVersions <- latestVersions(deps)
           updatedDeps = latestVersions.filter {
@@ -40,7 +39,7 @@ object ThirdPartyDepsAnalyzer {
     }
   }
 
-  def findLatest(forkData: ForkData): RIO[ThirdPartyDepsAnalyzer with MavenCentralClient with Http4sClient with Console, List[Dep]] = {
-    ZIO.accessM[ThirdPartyDepsAnalyzer with MavenCentralClient with Http4sClient with Console](_.analyzer.findLatest(forkData))
+  def findLatest(forkData: ForkData): RIO[ThirdPartyDepsAnalyzer with MavenCentralClient with BazelClient with Http4sClient with Console, List[Dep]] = {
+    ZIO.accessM[ThirdPartyDepsAnalyzer with MavenCentralClient with BazelClient with Http4sClient with Console](_.analyzer.findLatest(forkData))
   }
 }

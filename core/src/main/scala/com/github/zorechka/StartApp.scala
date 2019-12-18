@@ -1,6 +1,6 @@
 package com.github.zorechka
 
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 import com.github.zorechka.clients.{BazelClient, BuildozerClient, GithubClient, Http4sClient, MavenCentralClient}
 import com.github.zorechka.repos.{GitRepo, GithubRepos}
@@ -37,7 +37,7 @@ object StartApp extends App {
     val forkDir = Files.createTempDirectory(s"repos-${repo.owner}-${repo.name}")
     for {
       _ <- putStrLn(s"Forking in: ${forkDir.toAbsolutePath}")
-      // repoPath = Path.of("/var/folders/st/2qj3mn41327b1ynd4jjfxxg978_y4f/T/repos-wix-private-strategic-products11113169125862272842/strategic-products")
+//      repoPath = Path.of("/var/folders/st/2qj3mn41327b1ynd4jjfxxg978_y4f/T/repos-wix-private-strategic-products11113169125862272842/strategic-products")
       repoPath = forkDir.resolve(repo.name)
       _ <- GithubClient.cloneRepo(repo, forkDir)
       forkData = ForkData(repo, repoPath)

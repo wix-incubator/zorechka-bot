@@ -1,14 +1,15 @@
 package com.github.zorechka.service
 
 
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 
 import com.github.zorechka.Dep
 import com.github.zorechka.StartApp.AppEnv
-import com.github.zorechka.bazel.BazelDepsCheck
-import com.github.zorechka.clients.GithubClient
+import com.github.zorechka.clients.{BuildozerClient, GithubClient}
 import zio.console.Console
 import zio.{RIO, ZIO}
+
+import collection.JavaConverters._
 
 trait ResultNotifier {
   val notifier: ResultNotifier.Service
@@ -17,23 +18,58 @@ trait ResultNotifier {
 object ResultNotifier {
 
   trait Service {
-    def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[TargetUnusedDeps]): RIO[AppEnv, Unit]
+    def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[BuildTargetUnusedDeps]): RIO[AppEnv, Unit]
   }
 
   trait CreatePullRequest extends ResultNotifier {
     override val notifier: Service = new Service {
-      def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[TargetUnusedDeps]): ZIO[AppEnv, Throwable, Unit] = {
+      def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[BuildTargetUnusedDeps]): ZIO[AppEnv, Throwable, Unit] = {
         val (depsDesc, branch) = branchName(updatedDeps)
 
         for {
           _ <- GithubClient.createBranch(forkDir, branch)
-          _ <- ZIO.effect(BazelDepsCheck.applyDepUpdates(forkDir, updatedDeps))
+          _ <- ZIO.effect(applyDepUpdates(forkDir, updatedDeps))
+          _ <- applyUnusedDeps(forkDir, unusedDeps)
           _ <- GithubClient.stageAllChanges(forkDir)
           _ <- GithubClient.commit(forkDir, s"zorechka found new versions for deps: $depsDesc #pr")
           _ <- GithubClient.push(forkDir, branch)
         } yield ()
       }
     }
+
+    private def applyUnusedDeps(repoDir: Path, unusedDeps: List[BuildTargetUnusedDeps]): RIO[BuildozerClient, List[Unit]] = {
+      ZIO.collectAll {
+        unusedDeps.flatMap { unusedDep =>
+          unusedDep.deps.map { dep =>
+            BuildozerClient.deleteDep(repoDir, dep.target, dep.dep)
+          }
+        }
+      }
+    }
+
+    private def applyDepUpdates(repoDir: Path, deps: List[Dep]): Unit = {
+      val regex = """artifact = "(.+)",""".r
+      deps.foreach { dep =>
+        val file = repoDir
+          .resolve("third_party")
+          .resolve(dep.groupId.replaceAll("\\.", "_") + ".bzl")
+
+        if (file.toFile.exists()) {
+          println(s"Rewriting deps for ${file.toAbsolutePath} to $dep")
+
+          val lines = Files.readAllLines(file)
+          val result = lines.asScala.map { line =>
+            regex.findFirstMatchIn(line) match {
+              case Some(m) if line.contains(s"${dep.groupId}:${dep.artifactId}:") =>
+                line.replace(m.group(1), s"${dep.groupId}:${dep.artifactId}:${dep.version}")
+              case _ => line
+            }
+          }
+          Files.write(file, result.asJava)
+        }
+      }
+    }
+
 
     private def branchName(deps: List[Dep]) = {
       val depsSample = deps.map(_.branchKey()).take(3).mkString("_")
@@ -44,7 +80,7 @@ object ResultNotifier {
 
   trait PrintPullRequestInfo extends ResultNotifier {
     override val notifier: Service = new Service {
-      override def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[TargetUnusedDeps]): RIO[AppEnv, Unit] = {
+      override def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[BuildTargetUnusedDeps]): RIO[AppEnv, Unit] = {
         ZIO.accessM[Console](_.console.putStrLn(
           s"""
              |Going to update:
@@ -57,7 +93,7 @@ object ResultNotifier {
     }
   }
 
-  def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[TargetUnusedDeps]): ZIO[AppEnv, Throwable, Unit] =
+  def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[BuildTargetUnusedDeps]): ZIO[AppEnv, Throwable, Unit] =
     ZIO.accessM[AppEnv](_.notifier.notify(forkDir, updatedDeps, unusedDeps))
 
 }

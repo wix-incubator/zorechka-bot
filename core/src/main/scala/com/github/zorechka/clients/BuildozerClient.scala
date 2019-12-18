@@ -11,29 +11,34 @@ trait BuildozerClient {
 
 object BuildozerClient {
   trait Service {
-    def targetDeps(workDir: Path, target: BuildTarget): Task[List[String]]
+    def packageDeps(workDir: Path, target: BuildPackage): Task[List[BuildTarget]]
     def deleteDep(workDir: Path, target: BuildTarget, dep: String): Task[Unit]
     def addDep(workDir: Path, target: BuildTarget, dep: String): Task[Unit]
   }
 
   trait Live extends BuildozerClient {
     override val buildozerClient: Service = new Service {
-      override def targetDeps(workDir: Path, target: BuildTarget): Task[List[String]] = for {
-        output <- RunProcess.execCmd(List("buildozer", "'print label deps'", target.value), workDir)
-      } yield output.value.head.split(" ").map(_.stripPrefix("[").stripSuffix("]")).tail.toList
+      override def packageDeps(workDir: Path, target: BuildPackage): Task[List[BuildTarget]] = for {
+        output <- RunProcess.execCmd(List("buildozer", "print label deps", s"//${target.value}:*"), workDir)
+      } yield output.value
+          .filter(!_.contains("has no attribute"))
+          .filter(!_.contains("(missing)"))
+          .map(_.split(" ").map(_.stripPrefix("[").stripSuffix("]")).toList).map {
+            case x :: xs => BuildTarget(x, xs) // TODO: not exhaustive match
+          }
 
       override def deleteDep(workDir: Path, target: BuildTarget, dep: String): Task[Unit] = {
-        RunProcess.execCmd(List("buildozer", s"'remove deps $dep'", target.value), workDir).unit
+        RunProcess.execCmd(List("buildozer", s"remove deps $dep", target.target), workDir).unit
       }
 
       override def addDep(workDir: Path, target: BuildTarget, dep: String): Task[Unit] = {
-        RunProcess.execCmd(List("buildozer", s"'add deps $dep'", target.value), workDir).unit
+        RunProcess.execCmd(List("buildozer", s"add deps $dep", target.target), workDir).unit
       }
     }
   }
 
-  def targetDeps(workDir: Path, target: BuildTarget): RIO[BuildozerClient, List[String]] =
-    ZIO.accessM[BuildozerClient](_.buildozerClient.targetDeps(workDir, target))
+  def packageDeps(workDir: Path, target: BuildPackage): RIO[BuildozerClient, List[BuildTarget]] =
+    ZIO.accessM[BuildozerClient](_.buildozerClient.packageDeps(workDir, target))
 
   def deleteDep(workDir: Path, target: BuildTarget, dep: String): RIO[BuildozerClient, Unit] =
     ZIO.accessM[BuildozerClient](_.buildozerClient.deleteDep(workDir, target, dep))
