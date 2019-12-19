@@ -1,13 +1,13 @@
 package com.wix.zorechka
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Files
 
-import com.wix.zorechka.clients.{BazelClient, BuildozerClient, GithubClient, Http4sClient, MavenCentralClient}
+import com.wix.zorechka.clients._
 import com.wix.zorechka.repos.{GitRepo, GithubRepos}
 import com.wix.zorechka.service.{ResultNotifier, ThirdPartyDepsAnalyzer, UnusedDepsAnalyser}
-import zio.{Runtime, ZIO}
-import zio.console._
+import zio.console.{Console, putStrLn}
 import zio.internal.PlatformLive
+import zio.{Runtime, ZIO}
 
 object StartApp extends App {
   type AppEnv = Console with GithubRepos with GithubClient with Http4sClient with MavenCentralClient
@@ -38,12 +38,12 @@ object StartApp extends App {
     for {
       _ <- putStrLn(s"Forking in: ${forkDir.toAbsolutePath}")
 //      repoPath = Path.of("/var/folders/st/2qj3mn41327b1ynd4jjfxxg978_y4f/T/repos-wix-private-strategic-products11113169125862272842/strategic-products")
-      repoPath = forkDir.resolve(repo.name)
-      _ <- GithubClient.cloneRepo(repo, forkDir)
-      forkData = ForkData(repo, repoPath)
-//      updatedDeps <- ThirdPartyDepsAnalyzer.findLatest(forkData)
-      unusedDeps <- UnusedDepsAnalyser.findUnused(forkData)
-      _ <- ResultNotifier.notify(forkData.forkDir, List.empty /* updatedDeps */, unusedDeps)
+//      repoPath = forkDir.resolve(repo.name)
+//      _ <- GithubClient.cloneRepo(repo, forkDir)
+//      forkData = ForkData(repo, repoPath)
+////      updatedDeps <- ThirdPartyDepsAnalyzer.findLatest(forkData)
+//      unusedDeps <- UnusedDepsAnalyser.findUnused(forkData)
+//      _ <- ResultNotifier.notify(forkData.forkDir, List.empty /* updatedDeps */, unusedDeps)
     } yield ()
   }
 }

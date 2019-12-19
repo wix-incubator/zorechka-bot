@@ -13,6 +13,14 @@ val settings = Seq(
   publishMavenStyle := true
 )
 
+test in assembly := {}
+assemblyJarName in assembly := s"app.jar"
+assemblyMergeStrategy in assembly := {
+  case PathList("reference.conf") => MergeStrategy.concat
+  case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+  case _ => MergeStrategy.first
+}
+
 resolvers ++= Seq(
   "Typesafe Snapshots" at "http://repo.typesafe.com/typesafe/snapshots/",
   "Secured Central Repository" at "https://repo1.maven.org/maven2",
@@ -53,6 +61,14 @@ lazy val core = project
     C.scalazZioInteropCats,
     T.specs2
   ) ++ C.circe_all ++ C.cats_all ++ C.http4s_all)
+
+lazy val app = project
+  .settings(settings)
+  .settings(
+    mainClass in assembly := Some("com.wix.zorechka.StartApp"),
+    assemblyJarName in assembly := "app.jar"
+  )
+  .dependsOn(core)
                                     
 lazy val root = project.in(file("."))
-  .aggregate(core)
+  .aggregate(core, app)
