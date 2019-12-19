@@ -1,6 +1,7 @@
-package com.github.zorechka.clients
+package com.wix.zorechka.clients
 
-import com.github.zorechka.{Dep, HasAppConfig}
+import com.wix.zorechka.{Dep, HasAppConfig}
+import com.wix.zorechka.HasAppConfig.Live
 import org.specs2.mutable.Specification
 import zio.{DefaultRuntime, Runtime}
 import zio.internal.PlatformLive
@@ -8,7 +9,7 @@ import zio.internal.PlatformLive
 class MavenCentralClientTest extends Specification with DefaultRuntime {
   "MavenCentralClient" should {
     "return list of deps for an artifact" in {
-      val rt = Runtime(new HasAppConfig.Live with Http4sClient.Live, PlatformLive.Default)
+      val rt = Runtime(new Live with Http4sClient.Live, PlatformLive.Default)
 
       val searchDep = Dep("org.scalacheck", "scalacheck_2.12", "1.10.0")
       val mavenCentral = new MavenCentralClient.Live {}

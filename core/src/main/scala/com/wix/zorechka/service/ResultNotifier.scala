@@ -1,11 +1,11 @@
-package com.github.zorechka.service
-
+package com.wix.zorechka.service
 
 import java.nio.file.{Files, Path}
 
-import com.github.zorechka.Dep
-import com.github.zorechka.StartApp.AppEnv
-import com.github.zorechka.clients.{BuildozerClient, GithubClient}
+import com.wix.zorechka.Dep
+import com.wix.zorechka.StartApp.AppEnv
+import com.wix.zorechka.clients.{BuildozerClient, GithubClient}
+import com.wix.zorechka.clients.BuildozerClient
 import zio.console.Console
 import zio.{RIO, ZIO}
 

@@ -1,11 +1,10 @@
-package com.github.zorechka
+package com.wix.zorechka
 
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
-import com.github.zorechka.HasAppConfig.Cfg
-import com.github.zorechka.utils.concurrent.NamedThreadFactory
+import com.wix.zorechka.HasAppConfig.Cfg
+import com.wix.zorechka.utils.concurrent.NamedThreadFactory
 import zio.internal.Executor
-import zio.{IO, Task, ZIO}
 
 import scala.concurrent.ExecutionContext
 

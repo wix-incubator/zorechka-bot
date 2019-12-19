@@ -1,4 +1,4 @@
-package com.github.zorechka.utils.concurrent
+package com.wix.zorechka.utils.concurrent
 
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger

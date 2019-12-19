@@ -1,9 +1,9 @@
-package com.github.zorechka.repos
+package com.wix.zorechka.repos
 
 import java.io.File
 import java.nio.file.Files
 
-import com.github.zorechka.HasAppConfig
+import com.wix.zorechka.HasAppConfig
 import zio.{RIO, ZIO}
 
 import collection.JavaConverters._

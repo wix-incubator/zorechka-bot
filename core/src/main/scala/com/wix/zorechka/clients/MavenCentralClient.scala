@@ -1,6 +1,6 @@
-package com.github.zorechka.clients
+package com.wix.zorechka.clients
 
-import com.github.zorechka.Dep
+import com.wix.zorechka.Dep
 import org.http4s.{EntityDecoder, Header, Headers, Method, Request, Uri}
 import zio.{RIO, Task, ZIO}
 import zio.interop.catz._

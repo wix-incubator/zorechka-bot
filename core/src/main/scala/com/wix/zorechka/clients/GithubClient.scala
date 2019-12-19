@@ -1,9 +1,9 @@
-package com.github.zorechka.clients
+package com.wix.zorechka.clients
 
 import java.nio.file.Path
 
-import com.github.zorechka.clients.process.{ClientOutput, RunProcess}
-import com.github.zorechka.repos.GitRepo
+import com.wix.zorechka.clients.process.{ClientOutput, RunProcess}
+import com.wix.zorechka.repos.GitRepo
 import zio.{RIO, Task, ZIO}
 
 trait GithubClient {

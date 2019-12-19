@@ -1,9 +1,9 @@
-package com.github.zorechka.service
+package com.wix.zorechka.service
 
 import java.nio.file.Path
 
-import com.github.zorechka.ForkData
-import com.github.zorechka.clients.{BazelClient, BuildPackage, BuildTarget, BuildozerClient}
+import com.wix.zorechka.ForkData
+import com.wix.zorechka.clients.{BazelClient, BuildPackage, BuildTarget, BuildozerClient}
 import zio.{RIO, ZIO}
 import zio.console.Console
 import zio.console._

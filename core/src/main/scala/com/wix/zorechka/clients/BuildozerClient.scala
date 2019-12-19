@@ -1,8 +1,8 @@
-package com.github.zorechka.clients
+package com.wix.zorechka.clients
 
 import java.nio.file.Path
 
-import com.github.zorechka.clients.process.RunProcess
+import com.wix.zorechka.clients.process.RunProcess
 import zio.{RIO, Task, ZIO}
 
 trait BuildozerClient {

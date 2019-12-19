@@ -1,7 +1,7 @@
-package com.github.zorechka.service
+package com.wix.zorechka.service
 
-import com.github.zorechka.{Dep, ForkData}
-import com.github.zorechka.clients.{BazelClient, Http4sClient, MavenCentralClient}
+import com.wix.zorechka.{Dep, ForkData}
+import com.wix.zorechka.clients.{BazelClient, Http4sClient, MavenCentralClient}
 import zio.{RIO, ZIO}
 import zio.console.{Console, putStrLn}
 
