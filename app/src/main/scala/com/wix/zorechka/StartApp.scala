@@ -38,12 +38,12 @@ object StartApp extends App {
     for {
       _ <- putStrLn(s"Forking in: ${forkDir.toAbsolutePath}")
 //      repoPath = Path.of("/var/folders/st/2qj3mn41327b1ynd4jjfxxg978_y4f/T/repos-wix-private-strategic-products11113169125862272842/strategic-products")
-//      repoPath = forkDir.resolve(repo.name)
-//      _ <- GithubClient.cloneRepo(repo, forkDir)
-//      forkData = ForkData(repo, repoPath)
-////      updatedDeps <- ThirdPartyDepsAnalyzer.findLatest(forkData)
+      repoPath = forkDir.resolve(repo.name)
+      _ <- GithubClient.cloneRepo(repo, forkDir)
+      forkData = ForkData(repo, repoPath)
+      updatedDeps <- ThirdPartyDepsAnalyzer.findLatest(forkData)
 //      unusedDeps <- UnusedDepsAnalyser.findUnused(forkData)
-//      _ <- ResultNotifier.notify(forkData.forkDir, List.empty /* updatedDeps */, unusedDeps)
+      _ <- ResultNotifier.notify(forkData.forkDir, updatedDeps, /* unusedDeps */ List.empty)
     } yield ()
   }
 }

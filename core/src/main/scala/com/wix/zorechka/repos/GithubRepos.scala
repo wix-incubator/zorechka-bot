@@ -21,15 +21,19 @@ object GithubRepos {
 
   trait Live extends GithubRepos {
     val repos: GithubRepos.Service = new GithubRepos.Service {
-      private val regex = """-\s+(.+)/(.+)""".r
-
       override def repos(): RIO[HasAppConfig, List[GitRepo]] = for {
         cfg <- ZIO.access[HasAppConfig](_.cfg.config)
         result <- ZIO.effect {
           Files
             .readAllLines(new File(cfg.reposFile).toPath).asScala
+            .map(_.trim.split(" ").toList)
             .collect {
-              case regex(owner, repo) => GitRepo(owner, repo, s"git@github.com:$owner/$repo.git")
+              case ownerRepo :: Nil =>
+                val (owner :: repo :: Nil) = ownerRepo.split("/").toList
+                GitRepo(owner, repo, s"https://github.com/$owner/$repo.git") // https://github.com/wix-private/strategic-products.git
+              case ownerRepo :: token :: Nil =>
+                val (owner :: repo :: Nil) = ownerRepo.split("/").toList
+                GitRepo(owner, repo, s"https://$token@github.com/$owner/$repo.git")
             }
             .toList
         }

@@ -1,1 +1,1 @@
-- wix-private/strategic-products
+<organization>>/<username> <token>
