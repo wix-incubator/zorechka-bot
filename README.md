@@ -5,11 +5,11 @@ It's like Scala Steward but for Bazel.
 
 # Configuration
 
-There is a repos.md file for list of repos to check. The format is <username>/<repo> per line. 
+There is a repos.md file for list of repos to check. The format is "{username}/{repo} {token}" per line. 
 
 # How to run
 
-Use sdbt and docker to build and run the application. From project dir, run:
+Use sdb and docker to build and run the application. From project dir, run:
 
     sbt assembly
     docker build -t zorechka-bot ./
