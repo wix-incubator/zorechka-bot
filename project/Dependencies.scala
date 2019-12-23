@@ -13,6 +13,7 @@ object Dependencies {
   val ShapelessVersion = "2.3.3"
   val FS2Version = "1.0.4"
   val Http4sVersion = "0.20.0-RC1"
+  val DoobieVersion = "0.8.6"
   val MavenArtifactVersion = "3.6.0"
 
   object C {
@@ -46,6 +47,12 @@ object Dependencies {
     val http4sCirce = "org.http4s" %% "http4s-circe" % Http4sVersion
     val http4sDsl = "org.http4s" %% "http4s-dsl" % Http4sVersion
     val http4s_all: Seq[ModuleID] = Seq(http4sBlazeClient, http4sCirce, http4sDsl)
+
+    // doobie
+    val doobieCore = "org.tpolecat" %% "doobie-core" % DoobieVersion
+    val doobieH2 = "org.tpolecat" %% "doobie-h2" % DoobieVersion
+    val doobieHikari = "org.tpolecat" %% "doobie-hikari" % DoobieVersion
+    val doobie_all: Seq[ModuleID] = Seq(doobieCore, doobieH2, doobieHikari)
 
     // scalaz
     val scalaz = "org.scalaz" %% "scalaz-core" % ScalaZVersion

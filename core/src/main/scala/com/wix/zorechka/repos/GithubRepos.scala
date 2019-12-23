@@ -3,8 +3,7 @@ package com.wix.zorechka.repos
 import java.io.File
 import java.nio.file.Files
 
-import com.wix.zorechka.HasAppConfig
-import zio.{RIO, ZIO}
+import zio.{RIO, Task, ZIO}
 
 import collection.JavaConverters._
 
@@ -16,16 +15,15 @@ trait GithubRepos {
 
 object GithubRepos {
   trait Service {
-    def repos(): RIO[HasAppConfig, List[GitRepo]]
+    def repos(reposFile: String): Task[List[GitRepo]]
   }
 
   trait Live extends GithubRepos {
     val repos: GithubRepos.Service = new GithubRepos.Service {
-      override def repos(): RIO[HasAppConfig, List[GitRepo]] = for {
-        cfg <- ZIO.access[HasAppConfig](_.cfg.config)
+      override def repos(reposFile: String): Task[ List[GitRepo]] = for {
         result <- ZIO.effect {
           Files
-            .readAllLines(new File(cfg.reposFile).toPath).asScala
+            .readAllLines(new File(reposFile).toPath).asScala
             .map(_.trim.split(" ").toList)
             .collect {
               case ownerRepo :: Nil =>
@@ -42,5 +40,5 @@ object GithubRepos {
   }
 
   // helpers
-  def repos(): RIO[GithubRepos with HasAppConfig, List[GitRepo]] = ZIO.accessM(env => env.repos.repos())
+  def repos(reposFile: String): RIO[GithubRepos, List[GitRepo]] = ZIO.accessM(env => env.repos.repos(reposFile))
 }

@@ -26,8 +26,9 @@ object StartApp extends App {
 
   def buildApp(args: List[String]): ZIO[AppEnv, Throwable, Unit] = for {
     _ <- putStrLn("Starting bot")
+    cfg <- HasAppConfig.loadConfig()
 
-    githubRepos <- GithubRepos.repos()
+    githubRepos <- GithubRepos.repos(cfg.reposFile)
     _ <- putStrLn("Has following repos: " + githubRepos.mkString("\n"))
     _ <- ZIO.collectAll(githubRepos.map(checkRepo))
     _ <- putStrLn("Finish bot")
@@ -42,8 +43,8 @@ object StartApp extends App {
       _ <- GithubClient.cloneRepo(repo, forkDir)
       forkData = ForkData(repo, repoPath)
       updatedDeps <- ThirdPartyDepsAnalyzer.findLatest(forkData)
-//      unusedDeps <- UnusedDepsAnalyser.findUnused(forkData)
-      _ <- ResultNotifier.notify(forkData.forkDir, updatedDeps, /* unusedDeps */ List.empty)
+      unusedDeps <- UnusedDepsAnalyser.findUnused(forkData)
+      _ <- ResultNotifier.notify(forkData.forkDir, updatedDeps,  unusedDeps)
     } yield ()
   }
 }

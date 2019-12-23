@@ -4,11 +4,14 @@ import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
 import com.wix.zorechka.HasAppConfig.Cfg
 import com.wix.zorechka.utils.concurrent.NamedThreadFactory
+import zio.{RIO, Task, ZIO}
 import zio.internal.Executor
 
 import scala.concurrent.ExecutionContext
 
-case class AppConfig(reposFile: String)
+case class AppConfig(reposFile: String, dbConfig: DbConfig)
+
+case class DbConfig(url: String, username: String, password: String)
 
 trait HasAppConfig {
   val cfg: Cfg
@@ -16,7 +19,7 @@ trait HasAppConfig {
 
 object HasAppConfig {
   trait Cfg {
-    val config: AppConfig
+    val loadConfig: Task[AppConfig]
     val blockingCtx: ExecutionContext
   }
 
@@ -24,7 +27,7 @@ object HasAppConfig {
     import pureconfig.generic.auto._
 
     val cfg: Cfg = new Cfg {
-      override val config: AppConfig = pureconfig.loadConfigOrThrow[AppConfig]
+      override val loadConfig: Task[AppConfig] = Task.effect(pureconfig.loadConfigOrThrow[AppConfig])
 
       override val blockingCtx: ExecutionContext = {
         val factory = NamedThreadFactory(name = "blocking-pool", daemon = true)
@@ -33,4 +36,6 @@ object HasAppConfig {
       }
     }
   }
+
+  def loadConfig(): RIO[HasAppConfig, AppConfig] = ZIO.accessM[HasAppConfig](_.cfg.loadConfig)
 }
