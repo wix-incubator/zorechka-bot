@@ -7,7 +7,7 @@ import com.wix.zorechka.clients.process.RunProcess
 import com.wix.zorechka.clients.process.RunProcess.execCmd
 import zio.{RIO, Task, ZIO}
 
-case class BuildPackage(value: String) extends AnyVal
+case class BuildPackage(value: String, buildFileHash: String)
 
 case class BuildTarget(target: String, deps: List[String])
 
@@ -26,7 +26,16 @@ object BazelClient {
     override val bazelClient: Service = new Service {
       override def allBuildTargets(workDir: Path): Task[List[BuildPackage]] = for {
         output <- RunProcess.execCmd(List("bazel", "query", "--wix_nocache",  "--noshow_progress", "'...'", "--output", "package"), workDir)
-      } yield output.value.dropWhile(_.trim.nonEmpty).tail.map(BuildPackage)
+        packs = output.value.dropWhile(_.trim.nonEmpty).tail
+        buildFileHash <- ZIO.collectAll(packs.map { pack =>
+          RunProcess.execCmd(List("sha256sum", s"$pack/BUILD.bazel"), workDir)
+            .map { output =>
+              output.value.head.split(" ").head
+            }.map { hash =>
+              BuildPackage(pack, hash)
+            }
+        })
+      } yield buildFileHash
 
       override def buildTarget(workDir: Path, target: BuildTarget): Task[Unit] = {
         RunProcess.execCmd(List("bazel", "build", target.target), workDir).unit

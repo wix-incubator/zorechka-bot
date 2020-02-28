@@ -48,11 +48,11 @@ object StartApp extends App {
         cfg <- HasAppConfig.loadConfig()
         dbReservation <- DbTransactor.newMysqlTransactor(cfg.db).reserve
         transactor <- dbReservation.acquire
-        httpClientReservation: Reservation[Blocking, Throwable, Client[Task]] <- Http4sClient.newHttpClient.reserve
+        httpClientReservation <- Http4sClient.newHttpClient.reserve
         httpClient <- httpClientReservation.acquire
       } yield InitAppState(cfg, transactor, httpClient, (exit: Exit[Any, Any]) =>
         for {
-          _ <- httpClientReservation.release(exit)
+          _ <- dbReservation.release(exit)
           _ <- httpClientReservation.release(exit)
         } yield ()
       )
@@ -86,9 +86,9 @@ object StartApp extends App {
 //    for {
 //      forkDir <- ZIO(Files.createTempDirectory(s"repos-${repo.owner}-${repo.name}"))
 //      _ <- putStrLn(s"Forking in: ${forkDir.toAbsolutePath}")
-//      repoPath = Path.of("/var/folders/st/2qj3mn41327b1ynd4jjfxxg978_y4f/T/repos-wix-private-strategic-products2979005669020257410")
+//      repoPath = Path.of("/var/folders/st/2qj3mn41327b1ynd4jjfxxg978_y4f/T/repos-wix-private-strategic-products18061679584814895349/strategic-products")
 //      //      repoPath = forkDir.resolve(repo.name)
-//      _ <- GithubClient.cloneRepo(repo, forkDir)
+////      _ <- GithubClient.cloneRepo(repo, forkDir)
 //      forkData = ForkData(repo, repoPath)
 //      //      updatedDeps <- ThirdPartyDepsAnalyzer.findLatest(forkData)
 //      unusedDeps <- UnusedDepsAnalyser.findUnused(forkData)

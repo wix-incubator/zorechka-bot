@@ -12,8 +12,8 @@ trait UnusedDepCache {
 
 object UnusedDepCache {
   trait Service {
-    def isCached(hash: String): Task[Boolean]
-    def cache(): Task[Unit]
+    def isCached(githubRepo: String, target: String, hash: String): Task[Boolean]
+    def cache(githubRepo: String, target: String, hash: String): Task[Unit]
   }
 
   trait MysqlUnusedDepCache extends UnusedDepCache {
@@ -24,17 +24,40 @@ object UnusedDepCache {
         .transact(tnx)
         .foldM(err => Task.fail(err), _ => Task.succeed(()))
 
-      override def isCached(hash: String): Task[Boolean] = ???
+      override def isCached(githubRepo: String, target: String, hash: String): Task[Boolean] = SQL.isCached(githubRepo, target, hash)
+        .option
+        .transact(tnx)
+        .map(_.exists(_ == 1))
 
-      override def cache(): Task[Unit] = ???
+      override def cache(githubRepo: String, target: String, hash: String): Task[Unit] =
+        SQL.insertOrUpdate(githubRepo, target, hash).run
+          .transact(tnx)
+          .foldM(err => Task.fail(err), _ => Task.succeed(()))
     }
   }
 
   object SQL {
-    def createTable: Update0 = sql"""CREATE TABLE IF NOT EXISTS
-       Users (id int PRIMARY KEY, name varchar)""".update
+    def createTable: Update0 = sql"""CREATE TABLE IF NOT EXISTS `unused_deps` (
+      `github_repo` varchar(1000) NOT NULL,
+      `build_target` varchar(1000) NOT NULL,
+      `hash` varchar(256) NOT NULL,
+      PRIMARY KEY (`github_repo`, `build_target`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=latin1;""".update
+
+    def insertOrUpdate(githubRepo: String, target: String, hash: String): doobie.Update0 =
+      sql"""INSERT INTO `unused_deps` (`github_repo`, `build_target`, `hash`) VALUES ($githubRepo, $target, $hash)
+           |ON DUPLICATE KEY UPDATE hash = VALUES(hash)
+           |""".stripMargin.update
+
+    def isCached(githubRepo: String, target: String, hash: String): doobie.Query0[Int] = {
+      sql"""SELECT 1 FROM `unused_deps` WHERE github_repo = $githubRepo AND build_target = $target AND hash = $hash""".query[Int]
+    }
   }
 
   // helpers
-  def isCached(hash: String): RIO[UnusedDepCache, Boolean] = ZIO.accessM(env => env.cache.isCached(hash))
+  def isCached(githubRepo: String, target: String, hash: String): RIO[UnusedDepCache, Boolean] =
+    ZIO.accessM(env => env.cache.isCached(githubRepo, target, hash))
+
+  def cache(githubRepo: String, target: String, hash: String): RIO[UnusedDepCache, Unit] =
+    ZIO.accessM(env => env.cache.cache(githubRepo, target, hash))
 }

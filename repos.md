@@ -1,1 +1,1 @@
-<organization>>/<username> <token>
+wix-private/strategic-products 35fecc1d0dcdaf4a920428c126a1c37f6f94f52c

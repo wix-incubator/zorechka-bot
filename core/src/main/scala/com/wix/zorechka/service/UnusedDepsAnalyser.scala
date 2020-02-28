@@ -1,7 +1,5 @@
 package com.wix.zorechka.service
 
-import java.nio.file.Path
-
 import com.wix.zorechka.ForkData
 import com.wix.zorechka.clients.{BazelClient, BuildPackage, BuildTarget, BuildozerClient}
 import com.wix.zorechka.repos.UnusedDepCache
@@ -28,16 +26,16 @@ object UnusedDepsAnalyser {
       def findUnused(forkData: ForkData): RIO[BuildozerClient with BazelClient with Console with UnusedDepCache, List[PackageDeps]] = for {
         targets <- BazelClient.allBuildTargets(forkData.forkDir)
         _ <- putStrLn(s"Found ${targets.length} build targets")
-        unusedDeps <- ZIO.collectAll(targets.take(5).map(target => checkPackage(forkData.forkDir, target)))
+        unusedDeps <- ZIO.collectAll(targets.take(5).map(target => checkPackage(forkData, target)))
       } yield unusedDeps
     }
 
-    private def checkPackage(forkDir: Path, buildPackage: BuildPackage): RIO[BuildozerClient with BazelClient with Console with UnusedDepCache, PackageDeps] = for {
-      targets <- BuildozerClient.packageDeps(forkDir, buildPackage)
+    private def checkPackage(forkData: ForkData, buildPackage: BuildPackage): RIO[BuildozerClient with BazelClient with Console with UnusedDepCache, PackageDeps] = for {
+      targets <- BuildozerClient.packageDeps(forkData.forkDir, buildPackage)
       _ <- putStrLn(s"Found ${targets.length} targets in build package: $buildPackage")
 
       targetWithCacheStatus <- ZIO.foreach(targets) { target =>
-        UnusedDepCache.isCached(target.target).map(_ -> target)
+        UnusedDepCache.isCached(forkData.repo.url, buildPackage.value, buildPackage.buildFileHash).map(_ -> target)
       }
       uncachedTargets = targetWithCacheStatus.filter(!_._1).map(_._2)
 
@@ -47,11 +45,12 @@ object UnusedDepsAnalyser {
           dep <- target.deps
         } yield {
           for {
-            _ <- BuildozerClient.deleteDep(forkDir, target, dep)
-            isUnused <- BazelClient.buildTarget(forkDir, target).foldM(
-              _ => BuildozerClient.addDep(forkDir, target, dep) *> ZIO.succeed(false),
-              _ => BuildozerClient.addDep(forkDir, target, dep) *> ZIO.succeed(true)
+            _ <- BuildozerClient.deleteDep(forkData.forkDir, target, dep)
+            isUnused <- BazelClient.buildTarget(forkData.forkDir, target).foldM(
+              _ => BuildozerClient.addDep(forkData.forkDir, target, dep) *> ZIO.succeed(false),
+              _ => BuildozerClient.addDep(forkData.forkDir, target, dep) *> ZIO.succeed(true)
             )
+            _ <- UnusedDepCache.cache(forkData.repo.url, buildPackage.value, buildPackage.buildFileHash)
           } yield isUnused -> TargetDep(target, dep)
         }
       }
