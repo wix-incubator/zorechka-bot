@@ -16,12 +16,12 @@ trait ResultNotifier {
 object ResultNotifier {
 
   trait Service {
-    def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[BuildTargetUnusedDeps]): RIO[GithubClient with BuildozerClient with Console, Unit]
+    def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[PackageDeps]): RIO[GithubClient with BuildozerClient with Console, Unit]
   }
 
   trait CreatePullRequest extends ResultNotifier {
     override val notifier: Service = new Service {
-      def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[BuildTargetUnusedDeps]): ZIO[GithubClient with BuildozerClient with Console, Throwable, Unit] = {
+      def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[PackageDeps]): ZIO[GithubClient with BuildozerClient with Console, Throwable, Unit] = {
         val (depsDesc, branch) = branchName(updatedDeps)
 
         for {
@@ -35,7 +35,7 @@ object ResultNotifier {
       }
     }
 
-    private def applyUnusedDeps(repoDir: Path, unusedDeps: List[BuildTargetUnusedDeps]): RIO[BuildozerClient, List[Unit]] = {
+    private def applyUnusedDeps(repoDir: Path, unusedDeps: List[PackageDeps]): RIO[BuildozerClient, List[Unit]] = {
       ZIO.collectAll {
         unusedDeps.flatMap { unusedDep =>
           unusedDep.deps.map { dep =>
@@ -78,7 +78,7 @@ object ResultNotifier {
 
   trait PrintPullRequestInfo extends ResultNotifier {
     override val notifier: Service = new Service {
-      override def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[BuildTargetUnusedDeps]): RIO[GithubClient with BuildozerClient with Console, Unit] = {
+      override def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[PackageDeps]): RIO[GithubClient with BuildozerClient with Console, Unit] = {
         ZIO.accessM[Console](_.console.putStrLn(
           s"""
              |Going to update:
@@ -91,7 +91,7 @@ object ResultNotifier {
     }
   }
 
-  def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[BuildTargetUnusedDeps]): ZIO[ResultNotifier with GithubClient with BuildozerClient with Console, Throwable, Unit] =
+  def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[PackageDeps]): ZIO[ResultNotifier with GithubClient with BuildozerClient with Console, Throwable, Unit] =
     ZIO.accessM[ResultNotifier with GithubClient with BuildozerClient  with Console](_.notifier.notify(forkDir, updatedDeps, unusedDeps))
 
 }

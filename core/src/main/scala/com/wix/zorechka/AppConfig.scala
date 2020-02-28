@@ -9,7 +9,7 @@ import zio.internal.Executor
 
 import scala.concurrent.ExecutionContext
 
-case class AppConfig(reposFile: String, dbConfig: DbConfig)
+case class AppConfig(reposFile: String, db: DbConfig)
 
 case class DbConfig(url: String, username: String, password: String)
 

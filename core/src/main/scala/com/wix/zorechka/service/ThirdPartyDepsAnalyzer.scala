@@ -1,7 +1,7 @@
 package com.wix.zorechka.service
 
 import com.wix.zorechka.{Dep, ForkData}
-import com.wix.zorechka.clients.{BazelClient, Http4sClient, MavenCentralClient}
+import com.wix.zorechka.clients.{BazelClient, MavenCentralClient}
 import zio.{RIO, ZIO}
 import zio.console.{Console, putStrLn}
 
@@ -11,12 +11,12 @@ trait ThirdPartyDepsAnalyzer {
 
 object ThirdPartyDepsAnalyzer {
   trait Service {
-    def findLatest(forkData: ForkData): ZIO[MavenCentralClient with BazelClient with Http4sClient with Console, Throwable, List[Dep]]
+    def findLatest(forkData: ForkData): ZIO[MavenCentralClient with BazelClient with Console, Throwable, List[Dep]]
   }
 
   trait Live extends ThirdPartyDepsAnalyzer {
     override val analyzer: Service = new Service {
-      override def findLatest(forkData: ForkData): ZIO[MavenCentralClient with BazelClient with Http4sClient with Console, Throwable, List[Dep]] = {
+      override def findLatest(forkData: ForkData): ZIO[MavenCentralClient with BazelClient with Console, Throwable, List[Dep]] = {
         for {
           deps <- BazelClient.foundDeps(forkData.forkDir)
           _ <- putStrLn(s"Found ${deps.size} in ${forkData.repo}")
@@ -29,8 +29,8 @@ object ThirdPartyDepsAnalyzer {
         } yield updatedDeps
       }
 
-      private def latestVersions(deps: Seq[Dep]): ZIO[MavenCentralClient with Http4sClient, Throwable, List[Dep]] = {
-        ZIO.foreach(deps)(dep => ZIO.accessM[MavenCentralClient with Http4sClient] {
+      private def latestVersions(deps: Seq[Dep]): ZIO[MavenCentralClient, Throwable, List[Dep]] = {
+        ZIO.foreach(deps)(dep => ZIO.accessM[MavenCentralClient] {
           _.client.allVersions(dep).map(listOfDeps => if (listOfDeps.isEmpty) dep else listOfDeps.max)
         })
       }
@@ -39,7 +39,7 @@ object ThirdPartyDepsAnalyzer {
     }
   }
 
-  def findLatest(forkData: ForkData): RIO[ThirdPartyDepsAnalyzer with MavenCentralClient with BazelClient with Http4sClient with Console, List[Dep]] = {
-    ZIO.accessM[ThirdPartyDepsAnalyzer with MavenCentralClient with BazelClient with Http4sClient with Console](_.analyzer.findLatest(forkData))
+  def findLatest(forkData: ForkData): RIO[ThirdPartyDepsAnalyzer with MavenCentralClient with BazelClient with Console, List[Dep]] = {
+    ZIO.accessM[ThirdPartyDepsAnalyzer with MavenCentralClient with BazelClient with Console](_.analyzer.findLatest(forkData))
   }
 }

@@ -54,6 +54,8 @@ object Dependencies {
     val doobieHikari = "org.tpolecat" %% "doobie-hikari" % DoobieVersion
     val doobie_all: Seq[ModuleID] = Seq(doobieCore, doobieH2, doobieHikari)
 
+    val mysql = "mysql" % "mysql-connector-java" % "5.1.34"
+
     // scalaz
     val scalaz = "org.scalaz" %% "scalaz-core" % ScalaZVersion
     val scalazZio = "dev.zio" %% "zio" % ZIOVersion

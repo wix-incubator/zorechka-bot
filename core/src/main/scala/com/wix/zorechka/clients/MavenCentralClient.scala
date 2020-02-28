@@ -2,10 +2,11 @@ package com.wix.zorechka.clients
 
 import com.wix.zorechka.Dep
 import org.http4s.{EntityDecoder, Header, Headers, Method, Request, Uri}
-import zio.{RIO, Task, ZIO}
+import zio.{Task, ZIO}
 import zio.interop.catz._
 import io.circe.generic.auto._
 import org.http4s.circe.jsonOf
+import org.http4s.client.Client
 
 trait MavenCentralClient {
   val client: MavenCentralClient.Service
@@ -13,10 +14,12 @@ trait MavenCentralClient {
 
 object MavenCentralClient {
   trait Service {
-    def allVersions(dep: Dep): RIO[Http4sClient, List[Dep]]
+    def allVersions(dep: Dep): Task[List[Dep]]
   }
 
   trait Live extends MavenCentralClient {
+    protected val httpClient: Client[Task]
+
     val client = new MavenCentralClient.Service {
       case class Response(response: InnerResponse)
       case class InnerResponse(docs: Seq[Document])
@@ -24,7 +27,7 @@ object MavenCentralClient {
 
       implicit val decoder: EntityDecoder[Task, Response] = jsonOf[Task, Response]
 
-      override def allVersions(dep: Dep): RIO[Http4sClient, List[Dep]] = {
+      override def allVersions(dep: Dep): Task[List[Dep]] = {
         ZIO.accessM {
           client =>
             val uri = Uri
@@ -36,9 +39,7 @@ object MavenCentralClient {
 
             val request = Request[Task](Method.GET, uri, headers = Headers.of(Header("Accept", "application/json")))
 
-            client.http4sClient.runRequest(request) {
-              response => response.as[Response]
-            }.map {
+            httpClient.fetch(request)(response => response.as[Response]).map {
               _.response.docs.map(_.v).map(v => Dep(dep.groupId, dep.artifactId, v)).toList
             }
         }
