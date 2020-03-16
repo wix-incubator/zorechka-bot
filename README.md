@@ -5,7 +5,7 @@ It's like Scala Steward but for Bazel.
 
 # Configuration
 
-There is a repos.md file for list of repos to check. The format is "{username}/{repo} {token}" per line. 
+There is a repos.md file for list of repos to check. The format is "{username}/{repo} {token}" per line. Token is optional, requred for private repos. To get a valid token, go to https://github.com/settings/tokens
 
 # How to run
 
