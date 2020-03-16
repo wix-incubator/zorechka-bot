@@ -14,3 +14,7 @@ Use sdb and docker to build and run the application. From project dir, run:
     sbt assembly
     docker build -t zorechka-bot ./
     docker run --rm -it zorechka-bot
+    
+# How to contribute
+
+Fork and import as SBT project. 
