@@ -1,1 +1,1 @@
-org/repo token
+taras-ivantsiv/zorechka-bot-test 88ffb506afb540357725e6dbf153bc861e725d33

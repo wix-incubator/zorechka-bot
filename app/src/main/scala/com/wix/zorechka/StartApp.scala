@@ -3,7 +3,7 @@ package com.wix.zorechka
 import java.nio.file.{Files, Path}
 
 import com.wix.zorechka.clients._
-import com.wix.zorechka.repos.{DbTransactor, GitRepo, GithubRepos, UnusedDepCache}
+import com.wix.zorechka.repos.{DbTransactor, FlywayMigrator, GitRepo, GithubRepos, UnusedDepCache}
 import com.wix.zorechka.service.{ResultNotifier, ThirdPartyDepsAnalyzer, UnusedDepsAnalyser}
 import doobie.hikari.HikariTransactor
 import doobie.util.transactor
@@ -48,6 +48,7 @@ object StartApp extends App {
         cfg <- HasAppConfig.loadConfig()
         dbReservation <- DbTransactor.newMysqlTransactor(cfg.db).reserve
         transactor <- dbReservation.acquire
+        _ <- FlywayMigrator.migrate(transactor)
         httpClientReservation <- Http4sClient.newHttpClient.reserve
         httpClient <- httpClientReservation.acquire
       } yield InitAppState(cfg, transactor, httpClient, (exit: Exit[Any, Any]) =>
