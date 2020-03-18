@@ -1,4 +1,4 @@
-CREATE TABLE `unused_deps` (
+CREATE TABLE IF NOT EXISTS `unused_deps` (
   `github_repo` varchar(1000) NOT NULL,
   `build_target` varchar(1000) NOT NULL,
   `hash` varchar(256) NOT NULL,
