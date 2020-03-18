@@ -9,11 +9,14 @@ There is a repos.md file for list of repos to check. The format is "{username}/{
 
 # How to run
 
-Use sdb and docker to build and run the application. From project dir, run:
+Use SBT and docker-compose to build and run the application. From project dir, run:
 
     sbt assembly
-    docker build -t zorechka-bot ./
-    docker run --rm -it zorechka-bot
+    docker-compose up
+    
+If you want to rebuild the application's image before running, execute:
+    
+    docker-compose up --build
     
 # How to contribute
 

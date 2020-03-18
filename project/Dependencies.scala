@@ -66,6 +66,8 @@ object Dependencies {
 
     val simulacrum = "com.github.mpilquist" %% "simulacrum" % "0.12.0"
     val amm = "com.lihaoyi" % "ammonite" % "1.1.2" % "test" cross CrossVersion.full
+
+    val flyway = "org.flywaydb" % "flyway-core" % "6.3.1"
   }
 
   object T {

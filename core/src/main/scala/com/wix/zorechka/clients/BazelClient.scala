@@ -25,7 +25,7 @@ object BazelClient {
   trait Live extends BazelClient {
     override val bazelClient: Service = new Service {
       override def allBuildTargets(workDir: Path): Task[List[BuildPackage]] = for {
-        output <- RunProcess.execCmd(List("bazel", "query", "--wix_nocache",  "--noshow_progress", "'...'", "--output", "package"), workDir)
+        output <- RunProcess.execCmd(List("bazel", "query",  "--noshow_progress", "'...'", "--output", "package"), workDir)
         packs = output.value.dropWhile(_.trim.nonEmpty).tail
         buildFileHash <- ZIO.collectAll(packs.map { pack =>
           RunProcess.execCmd(List("sha256sum", s"$pack/BUILD.bazel"), workDir)
@@ -42,7 +42,7 @@ object BazelClient {
       }
 
       override def foundDeps(repoDir: Path): Task[List[Dep]] = {
-        val cmd = List("bazel", "query", "--noimplicit_deps", "--wix_nocache","--keep_going", "deps(kind(scala_library, deps(//...)), 1)", "--output", "build")
+        val cmd = List("bazel", "query", "--noimplicit_deps","--keep_going", "deps(kind(scala_library, deps(//...)), 1)", "--output", "build")
         for {
           exec <- execCmd(cmd, repoDir)
         } yield parseQueryOutput(exec.value).filterNot(isIgnored)
