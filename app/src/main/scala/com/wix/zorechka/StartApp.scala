@@ -3,7 +3,7 @@ package com.wix.zorechka
 import java.nio.file.{Files, Path}
 
 import com.wix.zorechka.clients._
-import com.wix.zorechka.repos.{DbTransactor, GitRepo, GithubRepos, UnusedDepCache}
+import com.wix.zorechka.repos.{DbTransactor, FlywayMigrator, GitRepo, GithubRepos, UnusedDepCache}
 import com.wix.zorechka.service.{ResultNotifier, ThirdPartyDepsAnalyzer, UnusedDepsAnalyser}
 import doobie.hikari.HikariTransactor
 import doobie.util.transactor
@@ -21,7 +21,7 @@ case class InitAppState(config: AppConfig,
 
 object StartApp extends App {
   // Init cfg and db first
-  val initState = Runtime(new Console.Live with HasAppConfig.Live with Blocking.Live, PlatformLive.Default)
+  val initState = Runtime(new Console.Live with HasAppConfig.Live with Blocking.Live with FlywayMigrator.Live, PlatformLive.Default)
     .unsafeRunSync(initApp())
     .getOrElse(err => throw err.squash)
 
@@ -42,12 +42,13 @@ object StartApp extends App {
     buildApp(initState)
   )
 
-  private def initApp(): ZIO[HasAppConfig with Blocking, Throwable, InitAppState] =
+  private def initApp(): ZIO[HasAppConfig with Blocking with Console with FlywayMigrator, Throwable, InitAppState] =
     ZIO.runtime[Blocking].flatMap { implicit rt =>
       for {
         cfg <- HasAppConfig.loadConfig()
         dbReservation <- DbTransactor.newMysqlTransactor(cfg.db).reserve
         transactor <- dbReservation.acquire
+        _ <- FlywayMigrator.migrate(transactor)
         httpClientReservation <- Http4sClient.newHttpClient.reserve
         httpClient <- httpClientReservation.acquire
       } yield InitAppState(cfg, transactor, httpClient, (exit: Exit[Any, Any]) =>

@@ -68,8 +68,6 @@ object Dependencies {
     val amm = "com.lihaoyi" % "ammonite" % "1.1.2" % "test" cross CrossVersion.full
 
     val flyway = "org.flywaydb" % "flyway-core" % "6.3.1"
-
-    val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.1.0"
   }
 
   object T {
