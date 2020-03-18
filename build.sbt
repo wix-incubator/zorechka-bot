@@ -60,6 +60,8 @@ lazy val core = project
     C.scalazZio,
     C.scalazZioInteropCats,
     C.mysql,
+    C.flyway,
+    C.scalaXml,
     T.specs2,
   ) ++ C.circe_all ++ C.cats_all ++ C.http4s_all ++ C.doobie_all)
 

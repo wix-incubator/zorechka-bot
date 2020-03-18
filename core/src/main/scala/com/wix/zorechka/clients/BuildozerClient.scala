@@ -23,7 +23,7 @@ object BuildozerClient {
       } yield output.value
           .filter(!_.contains("has no attribute"))
           .filter(!_.contains("(missing)"))
-          .map(_.split(" ").map(_.stripPrefix("[").stripSuffix("]")).toList).map {
+          .map(_.split(" ").map(_.stripPrefix("[").stripSuffix("]")).filter(_.nonEmpty).toList).map {
             case x :: xs => BuildTarget(x, xs) // TODO: not exhaustive match
           }
 
