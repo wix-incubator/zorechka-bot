@@ -25,17 +25,18 @@ object BazelClient {
   trait Live extends BazelClient {
     override val bazelClient: Service = new Service {
       override def allBuildTargets(workDir: Path): Task[List[BuildPackage]] = for {
-        output <- RunProcess.execCmd(List("bazel", "query",  "--noshow_progress", "'...'", "--output", "package"), workDir)
-        packs = output.value.dropWhile(_.trim.nonEmpty).tail
-        buildFileHash <- ZIO.collectAll(packs.map { pack =>
-          RunProcess.execCmd(List("sha256sum", s"$pack/BUILD.bazel"), workDir)
+        output <- RunProcess.execCmd(List("bazel", "query", "--noshow_progress", "buildfiles(...)"), workDir)
+        packs = output.value.filter(_.startsWith("//")).map(_.split(":")(0))
+        packsWithHashes <- ZIO.collectAll(packs.map { pack =>
+          val buildFilePath = pack.stripPrefix("//") + "/BUILD.bazel"
+          RunProcess.execCmd(List("sha256sum", s"$buildFilePath"), workDir)
             .map { output =>
               output.value.head.split(" ").head
             }.map { hash =>
               BuildPackage(pack, hash)
             }
         })
-      } yield buildFileHash
+      } yield packsWithHashes
 
       override def buildTarget(workDir: Path, target: BuildTarget): Task[Unit] = {
         RunProcess.execCmd(List("bazel", "build", target.target), workDir).unit
