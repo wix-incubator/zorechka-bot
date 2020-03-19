@@ -28,7 +28,7 @@ object BazelClient {
         output <- RunProcess.execCmd(List("bazel", "query", "--noshow_progress", "buildfiles(...)"), workDir)
         packs = output.value.filter(_.startsWith("//")).map(_.split(":")(0))
         packsWithHashes <- ZIO.collectAll(packs.map { pack =>
-          val buildFilePath = pack.stripPrefix("//") + "//BUILD.bazel"
+          val buildFilePath = pack.stripPrefix("//") + "/BUILD.bazel"
           RunProcess.execCmd(List("sha256sum", s"$buildFilePath"), workDir)
             .map { output =>
               output.value.head.split(" ").head
