@@ -54,15 +54,19 @@ addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6")
 
 lazy val core = project
   .settings(settings)
-  .settings(libraryDependencies ++= Seq(
-    C.mavenArtifact,
-    C.config,
-    C.scalazZio,
-    C.scalazZioInteropCats,
-    C.mysql,
-    C.flyway,
-    T.specs2,
-  ) ++ C.circe_all ++ C.cats_all ++ C.http4s_all ++ C.doobie_all)
+  .settings(
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
+    libraryDependencies ++= Seq(
+      C.mavenArtifact,
+      C.config,
+      C.scalazZio,
+      C.scalazZioInteropCats,
+      C.scalazZioTest,
+      C.scalazZioTestSbt,
+      C.mysql,
+      C.flyway,
+      T.specs2
+    ) ++ C.circe_all ++ C.cats_all ++ C.http4s_all ++ C.doobie_all)
 
 lazy val app = project
   .settings(settings)

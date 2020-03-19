@@ -1,6 +1,5 @@
 package com.wix.zorechka.clients
 
-import com.wix.zorechka.DbConfig
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import zio.blocking.Blocking
