@@ -60,6 +60,8 @@ object Dependencies {
     val scalaz = "org.scalaz" %% "scalaz-core" % ScalaZVersion
     val scalazZio = "dev.zio" %% "zio" % ZIOVersion
     val scalazZioInteropCats = "dev.zio" %% "zio-interop-cats" % ZIOInteropVersion
+    val scalazZioTest = "dev.zio" %% "zio-test" % ZIOVersion % "test"
+    val scalazZioTestSbt = "dev.zio" %% "zio-test-sbt" % ZIOVersion % "test"
     
     // maven ver parsing
     val mavenArtifact = "org.apache.maven" % "maven-artifact" % MavenArtifactVersion
