@@ -19,7 +19,7 @@ object BuildozerClient {
   trait Live extends BuildozerClient {
     override val buildozerClient: Service = new Service {
       override def packageDeps(workDir: Path, target: BuildPackage): Task[List[BuildTarget]] = for {
-        output <- RunProcess.execCmd(List("buildozer", "print label deps", s"//${target.value}:*"), workDir)
+        output <- RunProcess.execCmd(List("buildozer", "print label deps", s"${target.value}:*"), workDir)
       } yield output.value
           .filter(!_.contains("has no attribute"))
           .filter(!_.contains("(missing)"))
