@@ -2,9 +2,8 @@ package com.wix.zorechka
 
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
-import com.wix.zorechka.HasAppConfig.Cfg
 import com.wix.zorechka.utils.concurrent.NamedThreadFactory
-import zio.{RIO, Task, ZIO}
+import zio.{Has, RIO, Task, ZIO, ZLayer}
 import zio.internal.Executor
 
 import scala.concurrent.ExecutionContext
@@ -13,20 +12,17 @@ case class AppConfig(reposFile: String, db: DbConfig)
 
 case class DbConfig(url: String, username: String, password: String)
 
-trait HasAppConfig {
-  val cfg: Cfg
-}
-
 object HasAppConfig {
+
+  type HasAppConfig = Has[Cfg]
+
   trait Cfg {
     val loadConfig: Task[AppConfig]
     val blockingCtx: ExecutionContext
   }
 
-  trait Live extends HasAppConfig {
-    import pureconfig.generic.auto._
-
-    val cfg: Cfg = new Cfg {
+  val live = ZLayer.succeed {
+    new Cfg {
       override val loadConfig: Task[AppConfig] = Task.effect(pureconfig.loadConfigOrThrow[AppConfig])
 
       override val blockingCtx: ExecutionContext = {
@@ -37,5 +33,5 @@ object HasAppConfig {
     }
   }
 
-  def loadConfig(): RIO[HasAppConfig, AppConfig] = ZIO.accessM[HasAppConfig](_.cfg.loadConfig)
+  def loadConfig(): RIO[HasAppConfig, AppConfig] = ZIO.accessM[HasAppConfig](_.get.loadConfig)
 }

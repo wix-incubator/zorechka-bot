@@ -8,7 +8,7 @@ object Dependencies {
   val CirceVersion = "0.10.0-M1"
   val MonixVersion = "3.0.0-M3"
   val ScalaZVersion = "7.3.0-M28"
-  val ZIOVersion = "1.0.0-RC17"
+  val ZIOVersion = "1.0.0-RC18"
   val ZIOInteropVersion = "2.0.0.0-RC10"
   val ShapelessVersion = "2.3.3"
   val FS2Version = "1.0.4"
