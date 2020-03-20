@@ -1,9 +1,12 @@
 package com.wix.zorechka.service
 
 import com.wix.zorechka.ForkData
+import com.wix.zorechka.clients.BazelClient.BazelClient
+import com.wix.zorechka.clients.BuildozerClient.BuildozerClient
 import com.wix.zorechka.clients.{BazelClient, BuildPackage, BuildTarget, BuildozerClient}
 import com.wix.zorechka.repos.UnusedDepCache
-import zio.{RIO, ZIO}
+import com.wix.zorechka.repos.UnusedDepCache.UnusedDepCache
+import zio.{Has, RIO, ZIO, ZLayer}
 import zio.console.Console
 import zio.console._
 
@@ -11,18 +14,15 @@ case class TargetDep(target: BuildTarget, dep: String)
 
 case class PackageDeps(buildPackage: BuildPackage, deps: List[TargetDep])
 
-trait UnusedDepsAnalyser {
-  val unusedDepsAnalyser: UnusedDepsAnalyser.Service
-}
-
 object UnusedDepsAnalyser {
+  type UnusedDepsAnalyser = Has[Service]
 
   trait Service {
     def findUnused(forkData: ForkData): RIO[BuildozerClient with BazelClient with BuildozerClient with Console with UnusedDepCache, List[PackageDeps]]
   }
 
-  trait Live extends UnusedDepsAnalyser {
-    override val unusedDepsAnalyser: Service = new Service {
+  val live = ZLayer.succeed {
+    new Service {
       def findUnused(forkData: ForkData): RIO[BuildozerClient with BazelClient with Console with UnusedDepCache, List[PackageDeps]] = for {
         targets <- BazelClient.allBuildTargets(forkData.forkDir)
         _ <- putStrLn(s"Found ${targets.length} build targets")
@@ -30,7 +30,7 @@ object UnusedDepsAnalyser {
       } yield unusedDeps
     }
 
-    private def checkPackage(forkData: ForkData, buildPackage: BuildPackage): RIO[BuildozerClient with BazelClient with Console with UnusedDepCache, PackageDeps] = for {
+    def checkPackage(forkData: ForkData, buildPackage: BuildPackage): RIO[BuildozerClient with BazelClient with Console with UnusedDepCache, PackageDeps] = for {
       targets <- BuildozerClient.packageDeps(forkData.forkDir, buildPackage)
       _ <- putStrLn(s"Found ${targets.length} targets in build package: $buildPackage")
 
@@ -58,5 +58,5 @@ object UnusedDepsAnalyser {
   }
 
   def findUnused(forkData: ForkData): RIO[UnusedDepsAnalyser with BuildozerClient with BazelClient with Console with UnusedDepCache, List[PackageDeps]] =
-    ZIO.accessM[UnusedDepsAnalyser with BuildozerClient with BazelClient with Console with UnusedDepCache](_.unusedDepsAnalyser.findUnused(forkData))
+    ZIO.accessM[UnusedDepsAnalyser with BuildozerClient with BazelClient with Console with UnusedDepCache](_.get.findUnused(forkData))
 }

@@ -1,21 +1,21 @@
 package com.wix.zorechka.service
 
+import com.wix.zorechka.clients.BazelClient.BazelClient
+import com.wix.zorechka.clients.MavenCentralClient.MavenCentralClient
 import com.wix.zorechka.{Dep, ForkData}
 import com.wix.zorechka.clients.{BazelClient, MavenCentralClient}
-import zio.{RIO, ZIO}
+import zio.{Has, RIO, ZIO, ZLayer}
 import zio.console.{Console, putStrLn}
 
-trait ThirdPartyDepsAnalyzer {
-  val analyzer: ThirdPartyDepsAnalyzer.Service
-}
-
 object ThirdPartyDepsAnalyzer {
+  type ThirdPartyDepsAnalyzer = Has[Service]
+
   trait Service {
     def findLatest(forkData: ForkData): ZIO[MavenCentralClient with BazelClient with Console, Throwable, List[Dep]]
   }
 
-  trait Live extends ThirdPartyDepsAnalyzer {
-    override val analyzer: Service = new Service {
+  val live = ZLayer.succeed {
+    new Service {
       override def findLatest(forkData: ForkData): ZIO[MavenCentralClient with BazelClient with Console, Throwable, List[Dep]] = {
         for {
           deps <- BazelClient.foundDeps(forkData.forkDir)
@@ -31,7 +31,7 @@ object ThirdPartyDepsAnalyzer {
 
       private def latestVersions(deps: Seq[Dep]): ZIO[MavenCentralClient, Throwable, List[Dep]] = {
         ZIO.foreach(deps)(dep => ZIO.accessM[MavenCentralClient] {
-          _.client.allVersions(dep).map(listOfDeps => if (listOfDeps.isEmpty) dep else listOfDeps.max)
+          _.get.allVersions(dep).map(listOfDeps => if (listOfDeps.isEmpty) dep else listOfDeps.max)
         })
       }
 
@@ -40,6 +40,6 @@ object ThirdPartyDepsAnalyzer {
   }
 
   def findLatest(forkData: ForkData): RIO[ThirdPartyDepsAnalyzer with MavenCentralClient with BazelClient with Console, List[Dep]] = {
-    ZIO.accessM[ThirdPartyDepsAnalyzer with MavenCentralClient with BazelClient with Console](_.analyzer.findLatest(forkData))
+    ZIO.accessM[ThirdPartyDepsAnalyzer with MavenCentralClient with BazelClient with Console](_.get.findLatest(forkData))
   }
 }

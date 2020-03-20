@@ -3,37 +3,33 @@ package com.wix.zorechka.repos
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update0
 import doobie.implicits._
-import zio.{RIO, Task, ZIO}
+import zio.{Has, RIO, Task, ZIO, ZLayer}
 import zio.interop.catz._
 
-trait UnusedDepCache {
-  val cache: UnusedDepCache.Service
-}
-
 object UnusedDepCache {
+  type UnusedDepCache = Has[Service]
+
   trait Service {
     def isCached(githubRepo: String, target: String, hash: String): Task[Boolean]
     def cache(githubRepo: String, target: String, hash: String): Task[Unit]
   }
 
-  trait MysqlUnusedDepCache extends UnusedDepCache {
-    protected val tnx: Transactor[Task]
-
-    override val cache: Service = new Service {
-      def createTable: Task[Unit] = SQL.createTable.run
+  final case class MysqlUnusedDepCache(tnx: Transactor[Task]) extends Service {
+    def createTable: Task[Unit] = SQL.createTable.run
+      .transact(tnx)
+      .foldM(err => Task.fail(err), _ => Task.succeed(()))
+    override def isCached(githubRepo: String, target: String, hash: String): Task[Boolean] = SQL.isCached(githubRepo, target, hash)
+      .option
+      .transact(tnx)
+      .map(_.exists(_ == 1))
+    override def cache(githubRepo: String, target: String, hash: String): Task[Unit] =
+      SQL.insertOrUpdate(githubRepo, target, hash).run
         .transact(tnx)
         .foldM(err => Task.fail(err), _ => Task.succeed(()))
+  }
 
-      override def isCached(githubRepo: String, target: String, hash: String): Task[Boolean] = SQL.isCached(githubRepo, target, hash)
-        .option
-        .transact(tnx)
-        .map(_.exists(_ == 1))
-
-      override def cache(githubRepo: String, target: String, hash: String): Task[Unit] =
-        SQL.insertOrUpdate(githubRepo, target, hash).run
-          .transact(tnx)
-          .foldM(err => Task.fail(err), _ => Task.succeed(()))
-    }
+  def live(tnx: Transactor[Task]): ZLayer[Any, Nothing, Has[MysqlUnusedDepCache]] = ZLayer.succeed {
+      MysqlUnusedDepCache(tnx)
   }
 
   object SQL {
@@ -56,8 +52,8 @@ object UnusedDepCache {
 
   // helpers
   def isCached(githubRepo: String, target: String, hash: String): RIO[UnusedDepCache, Boolean] =
-    ZIO.accessM(env => env.cache.isCached(githubRepo, target, hash))
+    ZIO.accessM(_.get.isCached(githubRepo, target, hash))
 
   def cache(githubRepo: String, target: String, hash: String): RIO[UnusedDepCache, Unit] =
-    ZIO.accessM(env => env.cache.cache(githubRepo, target, hash))
+    ZIO.accessM(_.get.cache(githubRepo, target, hash))
 }

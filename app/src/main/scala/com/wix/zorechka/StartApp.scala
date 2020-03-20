@@ -1,17 +1,26 @@
 package com.wix.zorechka
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Files
 
-import com.wix.zorechka.clients._
-import com.wix.zorechka.repos.{DbTransactor, FlywayMigrator, GitRepo, GithubRepos, UnusedDepCache}
+import com.wix.zorechka.HasAppConfig.HasAppConfig
+import com.wix.zorechka.clients.BazelClient.BazelClient
+import com.wix.zorechka.clients.BuildozerClient.BuildozerClient
+import com.wix.zorechka.clients.GithubClient.GithubClient
+import com.wix.zorechka.clients.MavenCentralClient.MavenCentralClient
+import com.wix.zorechka.clients.{BuildozerClient, _}
+import com.wix.zorechka.repos.FlywayMigrator.FlywayMigrator
+import com.wix.zorechka.repos.GithubRepos.GithubRepos
+import com.wix.zorechka.repos.UnusedDepCache.UnusedDepCache
+import com.wix.zorechka.repos._
+import com.wix.zorechka.service.ResultNotifier.ResultNotifier
+import com.wix.zorechka.service.ThirdPartyDepsAnalyzer.ThirdPartyDepsAnalyzer
+import com.wix.zorechka.service.UnusedDepsAnalyser.UnusedDepsAnalyser
 import com.wix.zorechka.service.{ResultNotifier, ThirdPartyDepsAnalyzer, UnusedDepsAnalyser}
 import doobie.hikari.HikariTransactor
-import doobie.util.transactor
 import org.http4s.client.Client
 import zio.blocking.Blocking
 import zio.console.{Console, putStrLn}
-import zio.internal.PlatformLive
-import zio.{Exit, Reservation, Runtime, Task, ZIO}
+import zio.{Exit, Runtime, Task, ZIO}
 
 case class InitAppState(config: AppConfig,
                         dbTransactor: HikariTransactor[Task],
@@ -21,28 +30,29 @@ case class InitAppState(config: AppConfig,
 
 object StartApp extends App {
   // Init cfg and db first
-  val initState = Runtime(new Console.Live with HasAppConfig.Live with Blocking.Live with FlywayMigrator.Live, PlatformLive.Default)
-    .unsafeRunSync(initApp())
+
+  type InitStateEnv = HasAppConfig with Blocking with Console with FlywayMigrator
+
+  val initStateLayer = Console.live ++ HasAppConfig.live ++ Blocking.live ++ FlywayMigrator.live
+
+  val initApp: ZIO[Any, Throwable, InitAppState] = buildInitApp().provideLayer(initStateLayer)
+
+  val initState = Runtime.default.unsafeRunSync(initApp)
     .getOrElse(err => throw err.squash)
 
   type AppEnv = Console with GithubRepos with GithubClient with MavenCentralClient
     with ThirdPartyDepsAnalyzer with ResultNotifier with UnusedDepsAnalyser with BazelClient
     with BuildozerClient with UnusedDepCache with Blocking
 
-  val env: AppEnv = new Console.Live with Blocking.Live
-    with GithubRepos.Live with GithubClient.Live
-    with MavenCentralClient.Live with BuildozerClient.Live
-    with BazelClient.Live with ResultNotifier.PrintPullRequestInfo // CreatePullRequest
-    with ThirdPartyDepsAnalyzer.Live with UnusedDepsAnalyser.Live with UnusedDepCache.MysqlUnusedDepCache {
-      override protected val tnx: transactor.Transactor[Task] = initState.dbTransactor
-      override protected val httpClient: Client[Task] = initState.http4sClient
-  }
+  val appLayer = Console.live ++ GithubRepos.live ++ GithubClient.live ++ MavenCentralClient.live(initState.http4sClient) ++
+    ThirdPartyDepsAnalyzer.live ++ ResultNotifier.printPullRequestInfo ++ UnusedDepsAnalyser.live ++ BazelClient.live ++
+    BuildozerClient.live ++ UnusedDepCache.live(initState.dbTransactor) ++ Blocking.live
 
-  Runtime(env, PlatformLive.Default).unsafeRunSync(
-    buildApp(initState)
-  )
+  val app: ZIO[AppEnv, Throwable, Unit] = buildApp(initState).provideLayer(appLayer)
 
-  private def initApp(): ZIO[HasAppConfig with Blocking with Console with FlywayMigrator, Throwable, InitAppState] =
+  Runtime.default.unsafeRunSync(app)
+
+  private def buildInitApp(): ZIO[InitStateEnv, Throwable, InitAppState] =
     ZIO.runtime[Blocking].flatMap { implicit rt =>
       for {
         cfg <- HasAppConfig.loadConfig()

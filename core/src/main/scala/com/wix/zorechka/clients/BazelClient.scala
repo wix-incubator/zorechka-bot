@@ -5,25 +5,23 @@ import java.nio.file.Path
 import com.wix.zorechka.Dep
 import com.wix.zorechka.clients.process.RunProcess
 import com.wix.zorechka.clients.process.RunProcess.execCmd
-import zio.{RIO, Task, ZIO}
+import zio.{Has, RIO, Task, ZIO, ZLayer}
 
 case class BuildPackage(value: String, buildFileHash: String)
 
 case class BuildTarget(target: String, deps: List[String])
 
-trait BazelClient {
-  val bazelClient: BazelClient.Service
-}
-
 object BazelClient {
+  type BazelClient = Has[Service]
+
   trait Service {
     def allBuildTargets(workDir: Path): Task[List[BuildPackage]]
     def buildTarget(workDir: Path, target: BuildTarget): Task[Unit]
     def foundDeps(repoDir: Path): Task[List[Dep]]
   }
 
-  trait Live extends BazelClient {
-    override val bazelClient: Service = new Service {
+  val live = ZLayer.succeed {
+    new Service {
       override def allBuildTargets(workDir: Path): Task[List[BuildPackage]] = for {
         output <- RunProcess.execCmd(List("bazel", "query", "--noshow_progress", "buildfiles(...)"), workDir)
         packs = output.value.filter(_.startsWith("//")).map(_.split(":")(0))
@@ -76,11 +74,11 @@ object BazelClient {
   }
 
   def allBuildTargets(workDir: Path): ZIO[BazelClient, Throwable, List[BuildPackage]] =
-    ZIO.accessM[BazelClient](_.bazelClient.allBuildTargets(workDir))
+    ZIO.accessM[BazelClient](_.get.allBuildTargets(workDir))
 
   def buildTarget(workDir: Path, target: BuildTarget): RIO[BazelClient, Unit] =
-    ZIO.accessM[BazelClient](_.bazelClient.buildTarget(workDir, target))
+    ZIO.accessM[BazelClient](_.get.buildTarget(workDir, target))
 
   def foundDeps(repoDir: Path): RIO[BazelClient, List[Dep]] =
-    ZIO.accessM[BazelClient](_.bazelClient.foundDeps(repoDir))
+    ZIO.accessM[BazelClient](_.get.foundDeps(repoDir))
 }

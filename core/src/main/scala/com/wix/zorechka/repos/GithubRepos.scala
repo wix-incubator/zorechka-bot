@@ -3,24 +3,22 @@ package com.wix.zorechka.repos
 import java.io.File
 import java.nio.file.Files
 
-import zio.{RIO, Task, ZIO}
+import zio.{Has, RIO, Task, ZIO, ZLayer}
 
 import collection.JavaConverters._
 
 case class GitRepo(owner: String, name: String, url: String)
 
-trait GithubRepos {
-  val repos: GithubRepos.Service
-}
-
 object GithubRepos {
+  type GithubRepos = Has[Service]
+
   trait Service {
     def repos(reposFile: String): Task[List[GitRepo]]
   }
 
-  trait Live extends GithubRepos {
-    val repos: GithubRepos.Service = new GithubRepos.Service {
-      override def repos(reposFile: String): Task[ List[GitRepo]] = for {
+  val live = ZLayer.succeed {
+    new Service {
+      override def repos(reposFile: String): Task[List[GitRepo]] = for {
         result <- ZIO.effect {
           Files
             .readAllLines(new File(reposFile).toPath).asScala
@@ -39,6 +37,5 @@ object GithubRepos {
     }
   }
 
-  // helpers
-  def repos(reposFile: String): RIO[GithubRepos, List[GitRepo]] = ZIO.accessM(env => env.repos.repos(reposFile))
+  def repos(reposFile: String): RIO[GithubRepos, List[GitRepo]] = ZIO.accessM(_.get.repos(reposFile))
 }
