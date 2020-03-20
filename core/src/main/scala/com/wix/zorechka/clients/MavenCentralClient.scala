@@ -42,8 +42,7 @@ object MavenCentralClient {
     }
   }
 
-  val live: ZLayer[Any, Nothing, Has[Live]] = ZLayer.fromFunction {
-    case (httpClient: Client[Task]) =>
+  def live(httpClient: Client[Task]): ZLayer[Any, Nothing, Has[Live]] = ZLayer.succeed {
       Live(httpClient)
   }
 }

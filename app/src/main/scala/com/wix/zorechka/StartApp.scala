@@ -7,7 +7,7 @@ import com.wix.zorechka.clients.BazelClient.BazelClient
 import com.wix.zorechka.clients.BuildozerClient.BuildozerClient
 import com.wix.zorechka.clients.GithubClient.GithubClient
 import com.wix.zorechka.clients.MavenCentralClient.MavenCentralClient
-import com.wix.zorechka.clients._
+import com.wix.zorechka.clients.{BuildozerClient, _}
 import com.wix.zorechka.repos.FlywayMigrator.FlywayMigrator
 import com.wix.zorechka.repos.GithubRepos.GithubRepos
 import com.wix.zorechka.repos.UnusedDepCache.UnusedDepCache
@@ -20,7 +20,7 @@ import doobie.hikari.HikariTransactor
 import org.http4s.client.Client
 import zio.blocking.Blocking
 import zio.console.{Console, putStrLn}
-import zio.{App, Exit, Runtime, Task, ZIO}
+import zio.{Exit, Runtime, Task, ZIO}
 
 case class InitAppState(config: AppConfig,
                         dbTransactor: HikariTransactor[Task],
@@ -44,11 +44,11 @@ object StartApp extends App {
     with ThirdPartyDepsAnalyzer with ResultNotifier with UnusedDepsAnalyser with BazelClient
     with BuildozerClient with UnusedDepCache with Blocking
 
-  val appLayer = Console.live ++ Blocking.live ++ GithubRepos.live ++ GithubClient.live ++ MavenCentralClient.live ++
-    BuildozerClient.live ++ BazelClient.live ++ ResultNotifier.printPullRequestInfo ++ ThirdPartyDepsAnalyzer.live ++
-    UnusedDepsAnalyser.live ++ UnusedDepCache.live(initState.dbTransactor)
+  val appLayer = Console.live ++ GithubRepos.live ++ GithubClient.live ++ MavenCentralClient.live(initState.http4sClient) ++
+    ThirdPartyDepsAnalyzer.live ++ ResultNotifier.printPullRequestInfo ++ UnusedDepsAnalyser.live ++ BazelClient.live ++
+    BuildozerClient.live ++ UnusedDepCache.live(initState.dbTransactor) ++ Blocking.live
 
-  val app: ZIO[Any, Throwable, Unit] = buildApp(initState).provideLayer(appLayer)
+  val app: ZIO[AppEnv, Throwable, Unit] = buildApp(initState).provideLayer(appLayer)
 
   Runtime.default.unsafeRunSync(app)
 
