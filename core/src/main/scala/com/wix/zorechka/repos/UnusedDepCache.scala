@@ -28,8 +28,7 @@ object UnusedDepCache {
         .foldM(err => Task.fail(err), _ => Task.succeed(()))
   }
 
-  val cache: ZLayer[Any, Nothing, Has[MysqlUnusedDepCache]] = ZLayer.fromFunction {
-    case (tnx: Transactor[Task]) =>
+  def live(tnx: Transactor[Task]): ZLayer[Any, Nothing, Has[MysqlUnusedDepCache]] = ZLayer.succeed {
       MysqlUnusedDepCache(tnx)
   }
 

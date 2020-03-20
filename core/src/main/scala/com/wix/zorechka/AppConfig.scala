@@ -13,6 +13,7 @@ case class AppConfig(reposFile: String, db: DbConfig)
 case class DbConfig(url: String, username: String, password: String)
 
 object HasAppConfig {
+  import pureconfig.generic.auto._
 
   type HasAppConfig = Has[Cfg]
 
