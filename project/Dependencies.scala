@@ -9,7 +9,7 @@ object Dependencies {
   val MonixVersion = "3.0.0-M3"
   val ScalaZVersion = "7.3.0-M28"
   val ZIOVersion = "1.0.0-RC18"
-  val ZIOInteropVersion = "2.0.0.0-RC10"
+  val ZIOInteropVersion = "2.0.0.0-RC11"
   val ShapelessVersion = "2.3.3"
   val FS2Version = "1.0.4"
   val Http4sVersion = "0.20.0-RC1"

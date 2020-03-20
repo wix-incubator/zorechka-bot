@@ -4,13 +4,11 @@ import java.nio.file.Path
 
 import com.wix.zorechka.clients.process.{ClientOutput, RunProcess}
 import com.wix.zorechka.repos.GitRepo
-import zio.{RIO, Task, ZIO}
-
-trait GithubClient {
-  val githubClient: GithubClient.Service
-}
+import zio.{Has, RIO, Task, ZIO, ZLayer}
 
 object GithubClient {
+  type GithubClient = Has[Service]
+
   trait Service {
     def cloneRepo(repo: GitRepo, destinationDir: Path): Task[ClientOutput]
     def createBranch(workDir: Path, branchName: String): Task[ClientOutput]
@@ -19,8 +17,8 @@ object GithubClient {
     def push(workDir: Path, branchName: String): Task[ClientOutput]
   }
 
-  trait Live extends GithubClient {
-    val githubClient: GithubClient.Service = new GithubClient.Service {
+  val live = ZLayer.succeed {
+    new Service {
       def cloneRepo(repo: GitRepo, destinationDir: Path): Task[ClientOutput] = {
         RunProcess.execCmd(List("git", "clone", "--recursive", repo.url), destinationDir)
       }
@@ -44,19 +42,17 @@ object GithubClient {
   }
 
   def cloneRepo(repo: GitRepo, destinationDir: Path): RIO[GithubClient, ClientOutput] =
-    ZIO.accessM[GithubClient](_.githubClient.cloneRepo(repo, destinationDir))
+    ZIO.accessM[GithubClient](_.get.cloneRepo(repo, destinationDir))
 
   def createBranch(workDir: Path, branchName: String): RIO[GithubClient, ClientOutput] =
-    ZIO.accessM[GithubClient](_.githubClient.createBranch(workDir, branchName))
+    ZIO.accessM[GithubClient](_.get.createBranch(workDir, branchName))
 
   def stageAllChanges(workDir: Path): RIO[GithubClient, ClientOutput] =
-    ZIO.accessM[GithubClient](_.githubClient.stageAllChanges(workDir))
+    ZIO.accessM[GithubClient](_.get.stageAllChanges(workDir))
 
   def commit(workDir: Path, message: String): RIO[GithubClient, ClientOutput] =
-    ZIO.accessM[GithubClient](_.githubClient.commit(workDir, message))
+    ZIO.accessM[GithubClient](_.get.commit(workDir, message))
 
   def push(workDir: Path, branchName: String): RIO[GithubClient, ClientOutput] =
-    ZIO.accessM[GithubClient](_.githubClient.push(workDir, branchName))
+    ZIO.accessM[GithubClient](_.get.push(workDir, branchName))
 }
-
-object GithubClientLive extends GithubClient.Live

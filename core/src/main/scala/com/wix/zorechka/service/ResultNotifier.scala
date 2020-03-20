@@ -3,24 +3,23 @@ package com.wix.zorechka.service
 import java.nio.file.{Files, Path}
 
 import com.wix.zorechka.Dep
+import com.wix.zorechka.clients.BuildozerClient.BuildozerClient
+import com.wix.zorechka.clients.GithubClient.GithubClient
 import com.wix.zorechka.clients.{BuildozerClient, GithubClient}
 import zio.console.Console
-import zio.{RIO, ZIO}
+import zio._
 
 import collection.JavaConverters._
 
-trait ResultNotifier {
-  val notifier: ResultNotifier.Service
-}
-
 object ResultNotifier {
+  type ResultNotifier = Has[Service]
 
   trait Service {
     def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[PackageDeps]): RIO[GithubClient with BuildozerClient with Console, Unit]
   }
 
-  trait CreatePullRequest extends ResultNotifier {
-    override val notifier: Service = new Service {
+  val createPullRequest = ZLayer.succeed {
+    new Service {
       def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[PackageDeps]): ZIO[GithubClient with BuildozerClient with Console, Throwable, Unit] = {
         val (depsDesc, branch) = branchName(updatedDeps)
 
@@ -35,7 +34,7 @@ object ResultNotifier {
       }
     }
 
-    private def applyUnusedDeps(repoDir: Path, unusedDeps: List[PackageDeps]): RIO[BuildozerClient, List[Unit]] = {
+    def applyUnusedDeps(repoDir: Path, unusedDeps: List[PackageDeps]): RIO[BuildozerClient, List[Unit]] = {
       ZIO.collectAll {
         unusedDeps.flatMap { unusedDep =>
           unusedDep.deps.map { dep =>
@@ -45,7 +44,7 @@ object ResultNotifier {
       }
     }
 
-    private def applyDepUpdates(repoDir: Path, deps: List[Dep]): Unit = {
+    def applyDepUpdates(repoDir: Path, deps: List[Dep]): Unit = {
       val regex = """artifact = "(.+)",""".r
       deps.foreach { dep =>
         val file = repoDir
@@ -69,29 +68,29 @@ object ResultNotifier {
     }
 
 
-    private def branchName(deps: List[Dep]) = {
+    def branchName(deps: List[Dep]) = {
       val depsSample = deps.map(_.branchKey()).take(3).mkString("_")
       val depsDesc = (if (depsSample.length > 90) depsSample.substring(0, 90) else depsSample) + (if (deps.size > 3) s"_and_${deps.size - 3}_more" else "")
       (depsDesc, s"feature/update-deps-$depsDesc")
     }
   }
 
-  trait PrintPullRequestInfo extends ResultNotifier {
-    override val notifier: Service = new Service {
+  val printPullRequestInfo = ZLayer.succeed {
+    new Service {
       override def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[PackageDeps]): RIO[GithubClient with BuildozerClient with Console, Unit] = {
-        ZIO.accessM[Console](_.console.putStrLn(
+        ZIO.accessM[Console](_.get putStrLn
           s"""
              |Going to update:
              |${updatedDeps.mkString("\n")}
              |
              |Going to remove:
              |${unusedDeps.mkString("\n")}
-             |""".stripMargin))
+             |""".stripMargin)
       }
     }
   }
 
   def notify(forkDir: Path, updatedDeps: List[Dep], unusedDeps: List[PackageDeps]): ZIO[ResultNotifier with GithubClient with BuildozerClient with Console, Throwable, Unit] =
-    ZIO.accessM[ResultNotifier with GithubClient with BuildozerClient  with Console](_.notifier.notify(forkDir, updatedDeps, unusedDeps))
+    ZIO.accessM[ResultNotifier with GithubClient with BuildozerClient  with Console](_.get.notify(forkDir, updatedDeps, unusedDeps))
 
 }
